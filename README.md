@@ -87,9 +87,10 @@ python quizbot.py
 - Run `python quizbot.py`. That's it.
 
 ### Assigning teams
-Team assignment of a participant to say `team1` is by assigning them the role `team1`. The admin of the discord server can assign roles to the participants who are displayed in the column on the right. Clicking on a user will open up a window where there's a plus button to add a role. Right clicking on a user will give many other options as well. Someone who has been assigned as a quizmaster can assign roles to other users.
+Team assignment of a participant to say `team1` is by assigning them the role `team1`. The owner of the discord server can assign roles to the participants who are displayed in the member list column on the right. Clicking on a user will open up a window where there's a plus button to add a role. Right clicking on a user will give many other options as well. Someone who has been assigned as a quizmaster can assign roles to other users. 
+The server owner might want to mute themselves from the team and pounce channels to not get notified. The quizmaster will not be able to see non-bounce-pounce team channel chat messages unless the quizmaster is also assigned a team role.  
 
 ## Credits
-This is based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair Abid. Many thanks to him, Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out. 
+This is largely based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair Abid. Many thanks to him, Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out. 
 
 Please suggest features for the next version.
