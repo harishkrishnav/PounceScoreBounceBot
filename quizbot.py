@@ -60,7 +60,7 @@ teamChannels = {
     'team6': '698053******891093', 
     'team7': '698053******120052', 
     'team8': '698053******762351'
-    }#the number of teams is not hard-coded, you can simply append more teams
+    }#the number of teams is not hard-coded, you can simply append more teams. But stick to the naming convention.
 
 bounceChannel = '698054******343174'
 pounceChannel = '698054******720351'
