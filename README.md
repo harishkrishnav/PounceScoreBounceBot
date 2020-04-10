@@ -15,6 +15,7 @@ This message is displayed as a popup to the quizmaster and appears in a separate
 quizmaster has access to. For example, if a quizzer named harish in team3 wants to submit "mahatma gandhi" as a pounce answer,
 he simply types `!p mahatma gandhi` in team3's channel. The quizmaster would see the message `mahatma gandhi pounced by team3's harish`.
 
+
 Quizmaster sees pounces at one place: 
 ![pounce](https://i.imgur.com/YBUh06N.png "quizmaster view of pounces channel")
 quizmaster's view
@@ -30,7 +31,7 @@ he would type `!b mahatma gandhi` and all teams would see `Guess on the bounce b
 
 Bounce answers are broadcast: 
 ![bounce](https://i.imgur.com/3ShWRlm.png "team1 submit an answer on bounce")
-team1's view
+team1's view. The stream can be popped out and pinned to the top.
 
 
 ### Scoring
@@ -41,19 +42,20 @@ the dedicated scores channel and a message will be sent to every team that has a
 of points of every team after every update.
 
 
-Scoring is one simple command. This can be done by a scorer too: 
+Scoring is through one command. This can be done by a scorer too: 
 ![scoring](https://i.imgur.com/H5qfg2k.png "scores are given")
 scorer's view
 
+
 Typing `!scores` at any time from any channel will display all the scores. 
 
-If there are connectivity issues, the bot may reload and the scores may reset to zero. A warning will be displayed and the scores will have 
-to be entered again. Pounce/bounce should not be affected. 
+If there are connectivity issues, the bot may reload and the scores may reset to zero. A warning will be displayed and the scores will have to be entered again. Pounce/bounce should not be affected. 
 
 
 Teams are notified of score updates: 
 ![scores](https://i.imgur.com/mp9L1i5.png "points table at any time during the quiz")
 team2's view
+
 
 
 ### Cleanup
@@ -62,13 +64,16 @@ This command deletes all messages in all channels with IDs defined in the code:
 `!clearAllChannels` 
 This command deletes all messages in the specific channel it is called
 `!clearThis`
+This may be better than cloning/deleting channels or servers and then retyping channel IDs 
 
 
 ## Running the bot (the first time)
 - Create a discord server with this template: https://discord.new/ZSrQHC4tTF6T 
-- [Create a bot with admin privileges on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) 
+- [Create a bot on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) and get the token ID
 - Right click on the channels in discord and copy paste the channel IDs in the python script ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode))
 - This assumes you have [python3](https://www.python.org/downloads/). Install required packages in a virtual environment (warnings are okay)
+- Discord needs to be run on the [desktop or mobile application](https://discordapp.com/download) (and not on the browser). This is needed for [screenshare](https://support.discordapp.com/hc/en-us/articles/360030714312-Stream-your-game-with-Go-Live-) anyway (I think for all participants and not just quizmaster). It needn't be the quizmaster running the bot.
+
 ```
 pip install -r requirements.txt
 ```
