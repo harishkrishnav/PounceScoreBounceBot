@@ -47,8 +47,8 @@ This command deletes all messages in the specific channel it is called
 ## Running the bot (the first time)
 - Create a discord server with this template: https://discord.new/ZSrQHC4tTF6T 
 - [Create a bot with admin privileges on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) 
-- Right click on the channels in discord and copy paste the channel IDs in the python script ([may need to enable developer appearance](https://discordia.me/en/developer-mode))
-- This assumes you have [python3](https://www.python.org/downloads/). Install required packages in a virtual environment
+- Right click on the channels in discord and copy paste the channel IDs in the python script ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode))
+- This assumes you have [python3](https://www.python.org/downloads/). Install required packages in a virtual environment (warnings are okay)
 ```
 pip install -r requirements.txt
 ```
