@@ -82,4 +82,6 @@ python quizbot.py
 - Run `python quizbot.py`. That's it.
 
 ## Credits
-This is based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair. Many thanks to him, Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out.  
+This is based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair Abid. Many thanks to him, Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out. 
+
+Please suggest features for the next version.
