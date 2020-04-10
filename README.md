@@ -16,7 +16,7 @@ quizmaster has access to. For example, if a quizzer named harish in team3 wants 
 he simply types `!p mahatma gandhi` in team3's channel. The quizmaster would see the message `mahatma gandhi pounced by team3's harish`.
 
 Quizmaster sees pounces at one place: 
-![pounce](https://imgur.com/YBUh06N "quizmaster view of pounces channel")
+![pounce](https://i.imgur.com/YBUh06N.png "quizmaster view of pounces channel")
 
 
 
@@ -29,7 +29,7 @@ he would type `!b mahatma gandhi` and all teams would see `Guess on the bounce b
 
 
 Bounce answers are broadcast: 
-![bounce](https://imgur.com/3ShWRlm "team1 submit an answer on bounce")
+![bounce](https://i.imgur.com/3ShWRlm.png "team1 submit an answer on bounce")
 
 
 ### Scoring
@@ -41,7 +41,7 @@ of points of every team after every update.
 
 
 Scoring is one simple command. This can be done by a scorer too: 
-![scoring](https://imgur.com/H5qfg2k "scores are given")
+![scoring](https://i.imgur.com/H5qfg2k.png "scores are given")
 
 
 Typing `!scores` at any time from any channel will display all the scores. 
@@ -51,7 +51,7 @@ to be entered again. Pounce/bounce should not be affected.
 
 
 Teams are notified of score updates: 
-![scores](https://imgur.com/mp9L1i5 "points table at any time during the quiz")
+![scores](https://i.imgur.com/mp9L1i5.png "points table at any time during the quiz")
 
 
 ### Cleanup
