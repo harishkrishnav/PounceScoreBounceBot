@@ -1,4 +1,4 @@
-# PounceScoreBounceBot
+# PounceScoreBounceBot for quizzes
 
 ## What is it?
 
@@ -17,7 +17,7 @@ he simply types `!p mahatma gandhi` in team3's channel. The quizmaster would see
 
 Quizmaster sees pounces at one place: 
 ![pounce](https://i.imgur.com/YBUh06N.png "quizmaster view of pounces channel")
-
+quizmaster's view
 
 
 ### Bounce
@@ -30,6 +30,7 @@ he would type `!b mahatma gandhi` and all teams would see `Guess on the bounce b
 
 Bounce answers are broadcast: 
 ![bounce](https://i.imgur.com/3ShWRlm.png "team1 submit an answer on bounce")
+team1's view
 
 
 ### Scoring
@@ -42,7 +43,7 @@ of points of every team after every update.
 
 Scoring is one simple command. This can be done by a scorer too: 
 ![scoring](https://i.imgur.com/H5qfg2k.png "scores are given")
-
+scorer's view
 
 Typing `!scores` at any time from any channel will display all the scores. 
 
@@ -52,6 +53,7 @@ to be entered again. Pounce/bounce should not be affected.
 
 Teams are notified of score updates: 
 ![scores](https://i.imgur.com/mp9L1i5.png "points table at any time during the quiz")
+team2's view
 
 
 ### Cleanup
