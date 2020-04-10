@@ -2,7 +2,7 @@
 
 ## What is it?
 
-Discord + this bot eliminates the need for paid p2p subscriptions, participant limits, screenshotting, switching between channels, spreadsheets to keep scores, WhatsApp groups specifically for this quiz, and all those frustrations of quizzing online. If a participant tabs the screenshare window, they can go through the entire quiz without needing a mouse or switching out of the channel. The discord app can be installed in most mobile/PC devices and operating systems.   
+Discord + this bot eliminates the need for paid p2p subscriptions, participation limits, screenshotting, frequent switching between channels, spreadsheets to keep scores, WhatsApp groups specifically for a quiz, and all those frustrations of quizzing online. In this, if a participant tabs the screenshare window, they can go through the entire quiz without needing a mouse or switching out of the channel. 
 
 This is a discord bot to handle pounces, bounces and scoring in a quiz. A participant is assigned their team as a role (e.g. 'team1', 'team2') and has access only to the chat and voice channels of that team, and a general channel for clarifications. The bot also handles cleaning up after the quiz.
 
@@ -82,4 +82,4 @@ python quizbot.py
 - Run `python quizbot.py`. That's it.
 
 ## Credits
-This is based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair. Many thanks to Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out.  
+This is based on [this repo](https://github.com/zubairabid/QuizPounceBot) by Zubair. Many thanks to him, Athreya, Shyam, and others in the IIIT Hyderabad quiz club for figuring all this out.  
