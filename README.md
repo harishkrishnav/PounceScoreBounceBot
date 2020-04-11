@@ -104,7 +104,7 @@ python quizbot.py
 
 Because of this, a quizmaster need not keep keying `alt-tab` to switch between different applications. If there's a scorer, a quizmaster can go through an entire quiz only without needing to switch tabs - using the left and right arrow kets for the slideshow, while observing pounces through the channel and bounces through the notifications, and voicing directions.
 ![powerpoint slideshow as window](https://i.imgur.com/TbfLXNo.png "how to get powerpoint to open in a window that can be rescaled")
-This powerpoint window can be resized.
+This slideshow window can be resized.
 
 - I hear that in Macbooks, go live only mirrors the screen. The quizmaster will then have to turn off push notifications and download the discord app on their mobile to see the bounce and pounce channels while the laptop runs the slideshow in full-screen.
 
