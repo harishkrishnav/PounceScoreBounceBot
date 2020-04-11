@@ -47,19 +47,54 @@ channel IDs below.
 
 """
 
+import os
+
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
 
-##########  Replace strings below with the token and guild id  ###################
+### Get bot token and guild ID from env file, make one if it doesn't exist ###
 
-token = 'fairlyLongStringOfGibberish' ###YOU NEED TO REPLACE THIS. You can find this in https://discordapp.com/developers/applications and in the Bot menu of the settings
-guildId = 'veryBigNumber'   ###YOU NEED TO REPLACE THIS. You get this by right-clicking on the server icon if you have enabled developer appearance
+try:
+    # if the .env file exists, we can read the bot token and server (guild) id
+    # From that itself. Eliminates the need for hardcoding the tokens.
+    with open('.env', 'r') as e:
+        l = e.readline()
+        token = l.split('TOKEN=')[1]
+        l = e.readline()
+        guildId = l.split('GUILD=')[1]
 
-numberOfTeams = 6 #teams with team numbers greater than this are ignored
+except FileNotFoundError:
+    # otherwise, we take the token and guild ID as inputs, and write to 
+    # .env for ease of use next time
+    print("Setting up the bot for your server For details, refer to \
+            \nhttps://github.com/harishkrishnav/PounceScoreBounceBot\
+#running-the-bot-the-first-time")
+
+    token = input("Enter bot developer token: ") 
+    # You can find this in https://discordapp.com/developers/applications 
+    # and in the Bot menu of the settings
+
+    guildId = input("Enter Guild (Server) ID: ") # You get this by 
+    # right-clicking on the server icon if you have enabled developer appearance
+
+    with open('.env', 'w+') as envfile:
+        envfile.write('TOKEN='+token+'\n')
+        envfile.write('GUILD='+guildId+'\n')
+except:
+    print("An unknown exception occured. Please contact the developers")
+    raise
+
+
+while True:
+    numberOfTeams = int(input("How many teams for the quiz (<= 8)? ")) #teams 
+    # with team numbers greater than this are ignored
+    if numberOfTeams <= 8:
+        break
 bounceChannel = 'bounce-guesses'
 pounceChannel = 'pounce-guesses'
 scoreChannel  = 'scores'
-whitelistChannels = ['general','discord-and-bot-help'] #these channels are not touched by the bot and hence not cleared during reset
+whitelistChannels = ['general','discord-and-bot-help'] #these channels are not
+# touched by the bot and hence not cleared during reset
 #It is assumed that every team has a name like `teamX-chat`
 
 commonChannels = {}
