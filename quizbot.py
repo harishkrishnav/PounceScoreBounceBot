@@ -52,8 +52,8 @@ bot = commands.Bot(command_prefix='!')
 
 ##########  Replace strings below with the token and guild id  ###################
 
-token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg' ###YOU NEED TO REPLACE THIS
-guildId = '6**********878715'   ###YOU NEED TO REPLACE THIS
+token = 'fairlyLongStringOfGibberish' ###YOU NEED TO REPLACE THIS. You can find this in https://discordapp.com/developers/applications and in the Bot menu of the settings
+guildId = 'veryBigNumber'   ###YOU NEED TO REPLACE THIS. You get this by right-clicking on the server icon if you have enabled developer appearance
 
 numberOfTeams = 6 #teams with team numbers greater than this are ignored
 bounceChannel = 'bounce-guesses'
