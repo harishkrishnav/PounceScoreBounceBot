@@ -49,6 +49,9 @@ channel IDs below.
 
 ##########  Replace strings below with the token and channel id  ###################
 
+from discord.ext import commands
+bot = commands.Bot(command_prefix='!')
+
 token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg'
 guildId = '6**********878715'
 
