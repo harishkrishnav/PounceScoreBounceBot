@@ -50,50 +50,51 @@ channel IDs below.
 ##########  Replace strings below with the token and channel id  ###################
 
 token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg'
+guildId = '6**********878715'
 
-teamChannels = {
-    'team1': '698053******881459', 
-    'team2': '698053******790080', 
-    'team3': '698053******057664', 
-    'team4': '698053******570566', 
-    'team5': '698053******321764', 
-    'team6': '698053******891093', 
-    'team7': '698053******120052', 
-    'team8': '698053******762351'
-    }#the number of teams is not hard-coded, you can simply append more teams. But stick to the naming convention.
+numberOfTeams = 6 #teams with team numbers greater than this are ignored
+bounceChannel = 'bounce-guesses'
+pounceChannel = 'pounce-guesses'
+scoreChannel  = 'scores'
+whitelistChannels = ['general','discord-and-bot-help'] #these channels are not touched by the bot and hence not cleared during reset
+#It is assumed that every team has a name like `teamX-chat`
 
-bounceChannel = '698054******343174'
-pounceChannel = '698054******720351'
-scoreChannel  = '698054******758410'
-#####################################################################################
-
-from discord.ext import commands
-
-bot = commands.Bot(command_prefix='!')
-
+commonChannels = {}
+teamChannels = {}
 scores = {}
-for team in teamChannels:
-    scores[team]=0
 
 @bot.command(name="broadcast", help="")
 async def broadcastToAllTeams(message):
     for team in teamChannels:
-        channel = bot.get_channel(int(teamChannels[team]))
-        await channel.send(message)
+        await teamChannels[team].send(message)
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
+
+    guild =  bot.get_guild(int(guildId))
+    for channel in guild.text_channels:
+        if channel.name.startswith('team') and channel.name.endswith('-chat'): #I don't want to import re
+            teamNo = int(''.join(char for char in channel.name if char.isdigit()))
+            if teamNo <= numberOfTeams:
+                teamChannels[channel.name.replace('-chat','')] = bot.get_channel(channel.id)
+        elif channel.name not in whitelistChannels:
+            commonChannels[channel.name] = bot.get_channel(channel.id)
+    
+    for team in teamChannels:
+        scores[team] = 0
+
     await broadcastToAllTeams("Welcome to the quiz! \nCommands: !p to pounce, !b to answer on bounce, !scores to see scores.")
+    
     response = "The bot is ready to bring the pounces to you"
-    channel = bot.get_channel(int(pounceChannel))
-    await channel.send(response)
+    await commonChannels[pounceChannel].send(response)
+    
     response = "Guesses on bounce you make by with !b command appear here"
-    channel = bot.get_channel(int(bounceChannel))
-    await channel.send(response)
+    await commonChannels[bounceChannel].send(response)
+    
     response = "The scores have been reset. If this has happened while a quiz was in progress, there was a connection issue."
-    channel = bot.get_channel(int(scoreChannel))
-    await channel.send(response)
+    await commonChannels[scoreChannel].send(response)
+
 
 @bot.command(name="p", help="Pounce: type \'!p your guess\' to send \"your guess\" to the quizmaster")
 async def pounce(ctx, *args, **kwargs):
@@ -101,7 +102,7 @@ async def pounce(ctx, *args, **kwargs):
     author = ctx.message.author
     team = str([y.name.lower() for y in author.roles][1:])
     response = '\'{}\' pounced by {}\'s {}'.format(str(message), team, author)
-    channel = bot.get_channel(int(pounceChannel))
+    channel = commonChannels[pounceChannel]
     await channel.send(response)
 
 @bot.command(name="b", help="Bounce: type \'!b your guess\' to send \"your guess\" to the quizmaster and all teams")
@@ -110,7 +111,7 @@ async def bounce(ctx, *args, **kwargs):
     author = ctx.message.author
     team = str([y.name.lower() for y in author.roles][1:])
     response = '{}\'s {}: {}'.format(team, author, str(message))
-    channel = bot.get_channel(int(bounceChannel))
+    channel = commonChannels[bounceChannel]
     await channel.send(response)
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, author, str(message))
     await broadcastToAllTeams(response)
@@ -139,15 +140,15 @@ async def updateScores(ctx, *args, **kwargs):
     sign = lambda x: ('+', '')[x<0]
     response = '{}{} to {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
-    channel = bot.get_channel(int(scoreChannel))
+    channel = commonChannels[scoreChannel]
     await channel.send(response)
 
     for team in teams:
-        channel=bot.get_channel(int(teamChannels[team]))
+        channel=teamChannels[team]
         response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
-@bot.command(name="clearAll", help="delete all messages in all important channel")
+@bot.command(name="clearAll", help="delete all messages in all important channel and resets score to 0")
 async def clearAll(ctx, *args, **kwargs):
     author = ctx.message.author
     authorRoles = [str(role).lower() for role in author.roles[1:]]
@@ -155,19 +156,21 @@ async def clearAll(ctx, *args, **kwargs):
         await ctx.send("Only a quizmaster or admin or scorer can purge all channels.")
         return
 
-    channels = [pounceChannel,bounceChannel,scoreChannel]+list(teamChannels.values())
-    for channelId in channels:
-        channel = bot.get_channel(int(channelId))
+    for channel in list(commonChannels.values())+list(teamChannels.values()):
         while(True):
             deleted = await channel.purge(limit=1000)
             if not len(deleted):
                 break
+
+    for team in teamChannels:
+        scores[team]=0
+
     return 
 
 @bot.command(name="clearThis", help="delete all messages in a channel")
 async def clearThis(ctx, *args, **kwargs):
     channel = ctx.message.channel
-    offlimitChannels = list(map(bot.get_channel, [int(pounceChannel),int(bounceChannel),int(scoreChannel)]))
+    offlimitChannels = [commonChannels[pounceChannel], commonChannels[bounceChannel], commonChannels[scoreChannel]]
     author = ctx.message.author
     authorRoles = [str(role).lower() for role in author.roles[1:]]
     if channel in offlimitChannels and ('quizmaster' not in authorRoles and 'scorer' not in authorRoles and 'admin' not in authorRoles):
