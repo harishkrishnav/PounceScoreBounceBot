@@ -47,10 +47,10 @@ channel IDs below.
 
 """
 
-##########  Replace strings below with the token and channel id  ###################
-
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
+
+##########  Replace strings below with the token and guild id  ###################
 
 token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg' ###YOU NEED TO REPLACE THIS
 guildId = '6**********878715'   ###YOU NEED TO REPLACE THIS
