@@ -87,19 +87,22 @@ async def on_ready():
     for team in teamChannels:
         scores[team] = 0
 
-    await broadcastToAllTeams("Welcome to the quiz! \nCommands: !p to pounce, !b to answer on bounce, !scores to see scores.")
+    await broadcastToAllTeams("Welcome to the quiz! \nCommands: `!p <answer>` \
+or `pounce <answer>` to pounce, `!b <answer>` or `!bounce <answer>` to answer \
+on bounce, `!scores` to see scores.")
     
     response = "The bot is ready to bring the pounces to you"
     await commonChannels[pounceChannel].send(response)
     
-    response = "Guesses on bounce you make by with !b command appear here"
+    response = "Guesses on bounce you make by with `!b`/`!bounce` command \
+appear here"
     await commonChannels[bounceChannel].send(response)
     
     response = "The scores have been reset. If this has happened while a quiz was in progress, there was a connection issue."
     await commonChannels[scoreChannel].send(response)
 
 
-@bot.command(name="p", aliases = ['pounce'], help="Pounce: type \'!p your guess\' to send \"your guess\" to the quizmaster")
+@bot.command(name="p", aliases = ['pounce'], help="Pounce: type `!p your guess` or `!pounce your guess` to send \"your guess\" to the quizmaster")
 async def pounce(ctx, *args, **kwargs):
     message = ' '.join([word for word in args])
     author = ctx.message.author
@@ -108,7 +111,7 @@ async def pounce(ctx, *args, **kwargs):
     channel = commonChannels[pounceChannel]
     await channel.send(response)
 
-@bot.command(name="b", aliases = ['bounce'], help="Bounce: type \'!b your guess\' to send \"your guess\" to the quizmaster and all teams")
+@bot.command(name="b", aliases = ['bounce'], help="Bounce: type `!b your guess` or `!bounce your guess` to send \"your guess\" to the quizmaster and all teams")
 async def bounce(ctx, *args, **kwargs):
     message = ' '.join([word for word in args])
     author = ctx.message.author
