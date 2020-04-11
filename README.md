@@ -68,14 +68,15 @@ This may be better than cloning/deleting channels or servers and then retyping c
 
 
 ## Running the bot (the first time)
-- Create a discord server with this [template](https://discord.new/ZSrQHC4tTF6T) 
-- [Create a bot on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) and get the token ID
-- Right click on the channels in discord and copy paste the channel IDs in the python script ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode))
-- This assumes you have [python3](https://www.python.org/downloads/). Clone or zip and download this repository. Install the required packages in a virtual environment (warnings are okay)
+1. Create a discord server with this [template](https://discord.new/ZSrQHC4tTF6T) 
+1. [Create a bot on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) and get the token ID
+1. Right click on the channels in discord and copy paste the channel IDs in the python script ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode))
+1. You probably already have [python](https://www.python.org/downloads/) installed. Clone or zip and download this repository. 
+1. Install the required packages in a virtual environment (warnings are okay)
 ```
 pip install -r requirements.txt
 ```
-- Run:
+6. Run:
 ```
 python quizbot.py
 ```
@@ -124,4 +125,4 @@ This is largely based on [this repo](https://github.com/zubairabid/QuizPounceBot
 - If the entire quiz is saved as a folder of images (each image being a slide), allowing for the quizmaster to send the image of the next slide to all teams through one command. This will be helpful if there's no AV content and many participants don't have a good internet connection.
 
 
-Please please suggest more.
+Please suggest more features. Any idea to make this bot powerful and intuitive is welcome.
