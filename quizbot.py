@@ -99,7 +99,7 @@ async def on_ready():
     await commonChannels[scoreChannel].send(response)
 
 
-@bot.command(name="p", help="Pounce: type \'!p your guess\' to send \"your guess\" to the quizmaster")
+@bot.command(name="p", aliases = ['pounce'], help="Pounce: type \'!p your guess\' to send \"your guess\" to the quizmaster")
 async def pounce(ctx, *args, **kwargs):
     message = ' '.join([word for word in args])
     author = ctx.message.author
@@ -108,7 +108,7 @@ async def pounce(ctx, *args, **kwargs):
     channel = commonChannels[pounceChannel]
     await channel.send(response)
 
-@bot.command(name="b", help="Bounce: type \'!b your guess\' to send \"your guess\" to the quizmaster and all teams")
+@bot.command(name="b", aliases = ['bounce'], help="Bounce: type \'!b your guess\' to send \"your guess\" to the quizmaster and all teams")
 async def bounce(ctx, *args, **kwargs):
     message = ' '.join([word for word in args])
     author = ctx.message.author
