@@ -52,8 +52,8 @@ channel IDs below.
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
 
-token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg'
-guildId = '6**********878715'
+token = 'Njk3ODQx*****DQ2ODY2MDIx.Xo9LtA**********************GyCyXg' ###YOU NEED TO REPLACE THIS
+guildId = '6**********878715'   ###YOU NEED TO REPLACE THIS
 
 numberOfTeams = 6 #teams with team numbers greater than this are ignored
 bounceChannel = 'bounce-guesses'
