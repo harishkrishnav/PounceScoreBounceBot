@@ -70,7 +70,7 @@ This may be better than cloning/deleting channels or servers and then retyping c
 ## Running the bot (the first time)
 1. Create a discord server with this [template](https://discord.new/ZSrQHC4tTF6T) 
 1. [Create a bot on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token) and get the token ID
-1. Right click on the guild icon in the bar on the left and click on copy ID([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in quizbot.py in place of guildId (line 55).
+1. Right click on the guild icon in the bar on the left and click on copy ID([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in quizbot.py in place of guildId (line 53).
 1. You probably already have [python](https://www.python.org/downloads/) installed. Clone or zip and download this repository. 
 1. Install the required packages in a virtual environment (warnings are okay)
 ```
