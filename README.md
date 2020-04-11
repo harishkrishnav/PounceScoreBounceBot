@@ -100,7 +100,12 @@ python quizbot.py
 - Quizmasters can go to the voice channel named `the quiz` and find the option to "go live" in the bottom left
 - There is currently a limit of 50 people being connected to this live streaming. The limit may reduce in the future. However, there is no limit on the number of people being connected to the voice channel when there's no streaming, nor in other channels. In such a scenario, using screenshots may be the best way to hold quizzes. Before this happens, this bot should have features that make it very easy to send images of slides.
 - In Windows, it's possible for the quiz master to dock the discord app and the slideshow like this:
+![both discord and powerpoint slideshow open](https://i.imgur.com/oYjP2Fm.png "the quizmaster can have both discord and powerpoint slideshow open side-by-side")
+
 Because of this, a quizmaster need not keep keying `alt-tab` to switch between different applications. If there's a scorer, a quizmaster can go through an entire quiz only without needing to switch tabs - using the left and right arrow kets for the slideshow, while observing pounces through the channel and bounces through the notifications, and voicing directions.
+![powerpoint slideshow as window](https://i.imgur.com/TbfLXNo.png "how to get powerpoint to open in a window that can be rescaled")
+This powerpoint window can be resized.
+
 - I hear that in Macbooks, go live only mirrors the screen. The quizmaster will then have to turn off push notifications and download the discord app on their mobile to see the bounce and pounce channels while the laptop runs the slideshow in full-screen.
 
 #### Mute notifications
