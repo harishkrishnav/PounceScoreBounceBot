@@ -47,8 +47,6 @@ channel IDs below.
 
 """
 
-import os
-
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
 
