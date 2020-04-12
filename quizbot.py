@@ -135,8 +135,9 @@ appear here"
 async def pounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author = ctx.message.author
+    authorName = author.split("#")[0]
     team = ', '.join([str(role.name.lower()) for role in author.roles[1:] if role.name.startswith('team')])
-    response = '\'{}\' pounced by {}\'s {}'.format(guess, team, author)
+    response = '\'{}\' pounced by {}\'s {}'.format(guess, team, authorName)
     channel = commonChannels[pounceChannel]
     await channel.send(response)
     response = "Pounce submitted"
@@ -148,11 +149,12 @@ async def pounce(ctx, *args, **kwargs):
 async def bounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author = ctx.message.author
+    authorName = author.split("#")[0]
     team = str([role.name.lower() for role in author.roles[1:] if role.name.startswith('team')])
-    response = '{}\'s {}: {}'.format(team, author, guess)
+    response = '{}\'s {}: {}'.format(team, authorName, guess)
     channel = commonChannels[bounceChannel]
     await channel.send(response)
-    response = 'Guess on the bounce by {}\'s {}: {}'.format(team, author, str(guess))
+    response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
     await broadcastToAllTeams(response)
 
 @bot.command(name="scores", aliases = ["pointstable"], help="Displays the scores")
@@ -205,7 +207,7 @@ async def minus(ctx, *args, **kwargs):
     for team in teams:
         scores[team]-=points
     sign = lambda x: ('+', '')[-x<0]
-    response = '{}{} from {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
+    response = '{}{} off {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     channel = commonChannels[scoreChannel]
     await channel.send(response)
