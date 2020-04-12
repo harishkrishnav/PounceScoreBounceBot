@@ -4,13 +4,12 @@
 
 Discord + this bot eliminates the need for paid p2p subscriptions, time limits, screenshotting, frequent switching between channels, spreadsheets to keep scores, WhatsApp groups specifically for a quiz, and all those frustrations of quizzing online. In this, if a participant tabs the screenshare window, they can go through the entire quiz without needing a mouse or switching out of the channel. 
 
-This is a discord bot to handle pounces, bounces and scoring in a quiz. A participant is assigned their team as a role (e.g. 'team1', 'team2') and has access only to the chat and voice channels of that team, and a general channel for clarifications. The bot also handles cleaning up after the quiz.
-
+This is a discord bot to handle pounces, bounces, scoring, and cleaning up in a quiz. This repo is currently under development and all feature suggestions, bug reports, pull requests are welcome.
 
 ### Pouncing
 
 To pounce, a participant simply types
-`!p their pounce answer`
+`!p their pounce answer` or `!pounce some guess`
 This message is displayed as a popup to the quizmaster and appears in a separate channel for pounce answers that only the
 quizmaster has access to. For example, if a quizzer named harish in team3 wants to submit "mahatma gandhi" as a pounce answer,
 he simply types `!p mahatma gandhi` in team3's channel. The quizmaster would see the message `mahatma gandhi pounced by team3's harish`.
@@ -24,7 +23,7 @@ quizmaster's view
 ### Bounce
 
 Similarly, for bounce, a team types in their team's private chat 
-`!b their bounce answer`
+`!b their bounce answer` or `!bounce some guess`
 The bot sends this message to the private chats of all teams. So, if harish of team 3 were to answer mahatma gandhi" on bounce,
 he would type `!b mahatma gandhi` and all teams would see `Guess on the bounce by team3's harish : mahatma gandhi`. This will also appear in a separate bounces channel. 
 
@@ -37,9 +36,10 @@ team1's view. The stream can be popped out and pinned to the top.
 ### Scoring
 
 The 'quizmaster' or someone else who is assigned with the role of 'scorer' can simply type `!s 10 t4 t6` to add 10 points to the scores 
-of team4 and team6. Likewise, `!s -15 t1 t8` subtracts 15 points from the scores of team1 and team8. All score updates will be visible on 
-the dedicated scores channel and a message will be sent to every team that has an update. The score channel will also have the full table 
-of points of every team after every update.
+of team4 and team6. Likewise, `!s -15 t1 t8` subtracts 15 points from the scores of team1 and team8. All score updates will be visible on the dedicated scores channel and a message will be sent to every team that has an update. The score channel will also have the full table of points of every team after every update.
+The bot can also handle commands of the type `!plus 10 t4 t1 t2` and `!minus 5 t2 t9` for adding 10 points and subtracting 5 points respectively. 
+
+
 
 
 Scoring is through one command. This can be done by a scorer too: 
@@ -70,9 +70,8 @@ This may be better than cloning/deleting channels or servers and then retyping c
 ## Running the bot (the first time)
 1. Create a discord server with this [template](https://discord.new/ZSrQHC4tTF6T) 
 1. [Create a bot with 'administrator' permissions on the discord developer portal](https://github.com/reactiflux/discord-irc/wiki/Creating-a-discord-bot-&-getting-a-token). When replacing the client id in the URL, use permissions=8 i.e. `https://discordapp.com/oauth2/authorize?&client_id=CLIENTID&scope=bot&permissions=8` and not `permissions=0` 
-1. Right click on the guild icon in the bar on the left and click on copy ID([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in quizbot.py in place of guildId (line 53).
 1. You probably already have [python](https://www.python.org/downloads/) installed. Clone or zip and download this repository. 
-1. Install the required packages in a virtual environment (warnings are okay)
+1. Install the required packages in a virtual environment (warnings are okay) on a terminal
 ```
 pip install -r requirements.txt
 ```
@@ -80,6 +79,9 @@ pip install -r requirements.txt
 ```
 python quizbot.py
 ```
+7. The command window will prompt for the token. You would have noticed this when performing step 2 above. You can find this in https://discordapp.com/developers/applications and in the Bot menu in the settings tab. Copy-paste this long token here and hit enter.
+8. The prompt will not ask for a guild ID. Right click on the guild icon in the bar on the left and click on copy ID ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in the prompt and hit enter.
+9. You will notice that the folder now has a `.env` file with the credentials. You do not need to confront the prompts for this again.
 
 
 ## Starting the bot (subsequently)
@@ -125,4 +127,4 @@ This is largely based on [this repo](https://github.com/zubairabid/QuizPounceBot
 - If the entire quiz is saved as a folder of images (each image being a slide), allowing for the quizmaster to send the image of the next slide to all teams through one command. This will be helpful if there's no AV content and many participants don't have a good internet connection.
 
 
-Please suggest more features. Any idea to make this bot powerful and intuitive is welcome.
+Any idea to make this bot powerful and easy-to-understand is welcome.
