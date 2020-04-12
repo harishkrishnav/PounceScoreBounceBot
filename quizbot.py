@@ -28,6 +28,13 @@ scores-channel sees <points> to <list of teams>. Points table now: <pointstable>
 channels of teams with update see "<points> to your team. Your score is now <total points>"
 action only when sender has role quizmaster, scorer
 
+- !minus or !deduct
+example: !minus 5 t2 t4 t6
+5 subtracted from score of team2, team4, team6
+scores-channel sees <points> to <list of teams>. Points table now: <pointstable>
+channels of teams with update see "<points> to your team. Your score is now <total points>"
+action only when sender has role quizmaster, scorer
+
 - !clearAllChannels
 example: !clearAllChannels
 all messages from all non-whitelisted channels deleted
@@ -180,7 +187,33 @@ async def updateScores(ctx, *args, **kwargs):
         response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
-#TODO something to handle !minus
+#TODO handle !minus better
+@bot.command(name="minus", aliases = ["deduct"], help="scorer or quizmaster updates scores")
+async def minus(ctx, *args, **kwargs):
+    if len(args)<2:
+        await ctx.send("example: `!minus 5 t2 t8`  to deduct 5 points from team2 and team8")
+        return
+
+    author = ctx.message.author
+    authorRoles = [str(role).lower() for role in author.roles[1:]]
+    if 'quizmaster' not in authorRoles and 'scorer' not in authorRoles:
+        await ctx.send("Only a scorer or quizmaster can update scores.")
+        return
+
+    points = int(args[0])
+    teams = [team.replace('t','team') for team in args[1:]]
+    for team in teams:
+        scores[team]-=points
+    sign = lambda x: ('+', '')[x<0]
+    response = '{}{} to {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
+    response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
+    channel = commonChannels[scoreChannel]
+    await channel.send(response)
+
+    for team in teams:
+        channel=teamChannels[team]
+        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+        await channel.send(response)
 
 @bot.command(name="clearAllChannels", help="delete all messages in all important channel and resets score to 0")
 async def clearAll(ctx, *args, **kwargs):
