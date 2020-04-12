@@ -160,7 +160,7 @@ async def displayScores(ctx, *args, **kwargs):
     response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     await ctx.message.channel.send(response)
 
-@bot.command(name="s", aliases = ["plus"], help="scorer or quizmaster updates scores")
+@bot.command(name="s", aliases = ["plus"], help="for scorers and quizmasters to update scores")
 async def updateScores(ctx, *args, **kwargs):
     if len(args)<2:
         await ctx.send("example: `!s -5 t2 t8`  to deduct 5 points from team2 and team8")
@@ -188,7 +188,7 @@ async def updateScores(ctx, *args, **kwargs):
         await channel.send(response)
 
 #TODO handle !minus better
-@bot.command(name="minus", aliases = ["deduct"], help="scorer or quizmaster updates scores")
+@bot.command(name="minus", aliases = ["deduct"], help="for scorers and quizmasters to update scores")
 async def minus(ctx, *args, **kwargs):
     if len(args)<2:
         await ctx.send("example: `!minus 5 t2 t8`  to deduct 5 points from team2 and team8")
