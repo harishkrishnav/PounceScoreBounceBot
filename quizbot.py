@@ -135,7 +135,7 @@ appear here"
 async def pounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author = ctx.message.author
-    authorName = author.split("#")[0]
+    authorName = str(author).split("#")[0]
     team = ', '.join([str(role.name.lower()) for role in author.roles[1:] if role.name.startswith('team')])
     response = '\'{}\' pounced by {}\'s {}'.format(guess, team, authorName)
     channel = commonChannels[pounceChannel]
@@ -149,8 +149,8 @@ async def pounce(ctx, *args, **kwargs):
 async def bounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author = ctx.message.author
-    authorName = author.split("#")[0]
-    team = str([role.name.lower() for role in author.roles[1:] if role.name.startswith('team')])
+    authorName = str(author).split("#")[0]
+    team = ', '.join([str(role.name.lower()) for role in author.roles[1:] if role.name.startswith('team')])
     response = '{}\'s {}: {}'.format(team, authorName, guess)
     channel = commonChannels[bounceChannel]
     await channel.send(response)
