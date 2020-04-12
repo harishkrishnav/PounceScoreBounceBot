@@ -24,15 +24,15 @@ sender's channel sees "<team>:<score>" one team per line
 - !s or !plus
 example: !s -5 t2 t4 t6
 -5 added to score of team2, team4, team6
-scores-channel sees <points> to <list of teams>. Points table now: <pointstable>
+scores-channel sees "<points> to <list of teams>. Points table now: <pointstable>"
 channels of teams with update see "<points> to your team. Your score is now <total points>"
 action only when sender has role quizmaster, scorer
 
 - !minus or !deduct
 example: !minus 5 t2 t4 t6
 5 subtracted from score of team2, team4, team6
-scores-channel sees <points> to <list of teams>. Points table now: <pointstable>
-channels of teams with update see "<points> to your team. Your score is now <total points>"
+scores-channel sees "<points> to <list of teams>. Points table now: <pointstable>"
+channels of teams with update see "<points> off your team score. Your score is now <total points>"
 action only when sender has role quizmaster, scorer
 
 - !clearAllChannels
