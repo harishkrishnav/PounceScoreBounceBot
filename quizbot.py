@@ -205,7 +205,7 @@ async def minus(ctx, *args, **kwargs):
     for team in teams:
         scores[team]-=points
     sign = lambda x: ('+', '')[-x<0]
-    response = '{}{} to {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
+    response = '{}{} from {}. Points table now: \n'.format(sign(points),str(points), ' '.join(team for team in teams)) 
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     channel = commonChannels[scoreChannel]
     await channel.send(response)
