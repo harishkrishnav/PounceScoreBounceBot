@@ -116,8 +116,7 @@ async def on_ready():
     for team in teamChannels:
         scores[team] = 0
 
-    await broadcastToAllTeams("Welcome to the quiz! Commands: \n`!p your guess here` or `!pounce your guess here` to pounce,\n\
-        `!b your guess here` or `!bounce your guess here` to answer on bounce, `!scores` to see the scoretable.")
+    await broadcastToAllTeams("Welcome to the quiz! This is your team's private text channel.\nCommands for the bot:\n`!p your guess here` or `!pounce your guess here` to pounce,\n`!b your guess here` or `!bounce your guess here` to answer on bounce,\n`!scores` to see the scores.")
     
     response = "The bot is ready to bring the pounces to you"
     await commonChannels[pounceChannel].send(response)
