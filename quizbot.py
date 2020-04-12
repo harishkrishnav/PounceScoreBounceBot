@@ -212,7 +212,7 @@ async def minus(ctx, *args, **kwargs):
 
     for team in teams:
         channel=teamChannels[team]
-        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+        response = '{}{} points off your team score. Your score is now {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
 @bot.command(name="clearAllChannels", help="delete all messages in all important channel and resets score to 0")
