@@ -129,7 +129,7 @@ async def pounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author = ctx.message.author
     team = ', '.join([str(role.name.lower()) for role in author.roles[1:] if role.name.startswith('team')])
-    response = '\'{}\' pounced by {}\'s {}'.format(guess, team, author.split('#')[0])
+    response = '\'{}\' pounced by {}\'s {}'.format(guess, team, author)
     channel = commonChannels[pounceChannel]
     await channel.send(response)
     response = "Pounce submitted"
