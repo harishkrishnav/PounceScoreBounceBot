@@ -78,7 +78,7 @@ except FileNotFoundError:
     # otherwise, we take the token and guild ID as inputs, and write to 
     # .env for ease of use next time
     print("Setting up the bot for your server For details, refer to \nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
-
+    print("You will need to enter these credentials only the first time you run on a guild")
     token = input("Enter bot developer token: ") 
     # You can find this in https://discordapp.com/developers/applications 
     # and in the Bot menu of the settings
