@@ -101,13 +101,22 @@ python quizbot.py
 #### Screenshare
 - Only those connected from the desktop app (not the browser, not the mobile app) can [screenshare](https://support.discordapp.com/hc/en-us/articles/360040816151-Share-your-screen-with-Go-Live-Screen-Share).
 - Quizmasters can go to the voice channel named `the quiz` and find the option to "go live" in the bottom left
-- There is currently a limit of 50 people being connected to this live streaming. The limit may reduce in the future. However, there is no limit on the number of people being connected to the voice channel when there's no streaming, nor in other channels. In such a scenario, using screenshots may be the best way to hold quizzes. Before this happens, this bot should have features that make it very easy to send images of slides.
+- There is currently a limit of 50 people being connected to this live streaming. The limit may reduce in the future. However, there is no limit on the number of people being connected to the voice channel when there's no streaming, nor in other channels. In such a scenario, using screenshots may be the best way to hold quizzes. By the time discord announces a reduction in the number of people who can connect to a live stream, this bot should have features that make it very easy to send images of slides.
 - In Windows, it's possible for the quiz master to dock the discord app and the slideshow like this:
 ![both discord and powerpoint slideshow open](https://i.imgur.com/oYjP2Fm.png "the quizmaster can have both discord and powerpoint slideshow open side-by-side")
 
-Because of this, a quizmaster need not keep keying `alt-tab` to switch between different applications. If there's a scorer, a quizmaster can go through an entire quiz only without needing to switch tabs - using the left and right arrow kets for the slideshow, while observing pounces through the channel and bounces through the notifications, and voicing directions.
+Because of this, a quizmaster need not keep keying `alt-tab` to switch between different applications. If there's a scorer, a quizmaster can go through an entire quiz only without needing to switch tabs - using the left and right arrow kets for the slideshow, while observing pounces through the channel and bounces through the notifications. The quizmaster can save themselves a lot of hassle by assigning someone as a scorer who will handle the scoring commands while the quizmaster simply announces the points per question.
 ![powerpoint slideshow as window](https://i.imgur.com/TbfLXNo.png "how to get powerpoint to open in a window that can be rescaled")
 This slideshow window can be resized.
+
+- How to dock both the Powerpoint slideshow and discord windows side-by-side to avoid tab switching:
+   1. Click on the Slideshow ribbon tab and then set up slideshow
+   1. In the window that pops up, under 'Show Type', click 'Browsed by an individual (window)' and click OK
+   1. Present the slideshow
+   1. Double click on the title bar at the very top of the slideshow window or click on the 'Restore down' button that's between 'minimize' and 'close' on the top right
+   1. Move the mouse curser to the edges of the window to resize it. 
+   1. Repeat the above two steps for the discord app window. Place the two windows side-by-side, neither of them maximised. Look at the image above for inspiration.
+   1. Advancing slides on the slideshow is by clicking on the arrows at the bottom of the window. No need for alt-tabs.
 
 - I hear that in Macbooks, go live only mirrors the screen. The quizmaster will then have to turn off push notifications and download the discord app on their mobile to see the bounce and pounce channels while the laptop runs the slideshow in full-screen.
 
