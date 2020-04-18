@@ -35,7 +35,7 @@ team1's view. The stream can be popped out and pinned to the top.
 ### NEW: Team allocation
 Anyone without a team can type `!joinTeam` or `!assignMe` or `!join` from anywhere to be assigned a team randomly to a team that has the least number of members. 
 A quizmaster or scorer or admin can reset all team allocations by typing `!resetRoles` or `!unassignAll`. 
-Note that the quizmaster will have to only manually assign teams to members. The number of teams must be set correctly when starting the bot. 
+Note that if the quizmaster wants to assign teams, it will have to be done manually. The number of teams must be set correctly when starting the bot. 
 
 ### Scoring
 
@@ -129,6 +129,7 @@ This slideshow window can be resized.
  - The server owner might want to mute themselves from the team and pounce channels to not see the answers  
  and guesses 
  - Users can also mute the bot (right click and mute) 
+ - The easiest way to mute is to set status as 'Do Not Disturb'
  
 
 ## Credits
