@@ -32,6 +32,10 @@ Bounce answers are broadcast:
 ![bounce](https://i.imgur.com/3ShWRlm.png "team1 submit an answer on bounce")
 team1's view. The stream can be popped out and pinned to the top.
 
+### NEW: Team allocation
+Anyone without a team can type `!joinTeam` or `!assignMe` or `!join` from anywhere to be assigned a team randomly to a team that has the least number of members. 
+A quizmaster or scorer or admin can reset all team allocations by typing `!resetRoles` or `!unassignAll`. 
+Note that if the quizmaster wants to assign teams, it will have to be done manually. The number of teams must be set correctly when starting the bot. 
 
 ### Scoring
 
@@ -97,6 +101,7 @@ python quizbot.py
 - The owner of the discord server can assign roles to the participants who are displayed in the member list column on the right. Clicking on a user will open up a window where there's a plus button to add a role. Right clicking on a user will give many other options as well. 
 - Someone who has been assigned as a quizmaster can assign roles to other users.
 - The quizmaster will not be able to see non-bounce-pounce team channel chat messages unless the quizmaster is also assigned a team role. 
+- Quizmasters can use `!resetRoles` to unassign everyone's teams and everyone who wishes to participate can use `!joinTeam` to be assigned a team
 
 #### Screenshare
 - Only those connected from the desktop app (not the browser, not the mobile app) can [screenshare](https://support.discordapp.com/hc/en-us/articles/360040816151-Share-your-screen-with-Go-Live-Screen-Share).
@@ -124,6 +129,7 @@ This slideshow window can be resized.
  - The server owner might want to mute themselves from the team and pounce channels to not see the answers  
  and guesses 
  - Users can also mute the bot (right click and mute) 
+ - The easiest way to mute is to set status as 'Do Not Disturb'
  
 
 ## Credits
