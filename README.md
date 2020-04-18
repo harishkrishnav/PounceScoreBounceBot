@@ -110,11 +110,11 @@ Because of this, a quizmaster need not keep keying `alt-tab` to switch between d
 This slideshow window can be resized.
 
 - How to dock both the Powerpoint slideshow and discord windows side-by-side to avoid tab switching:
-   1. Click on the Slideshow ribbon tab and then set up slideshow
+   1. Open the quiz ppt and click on the Slideshow ribbon tab and then set up slideshow
    1. In the window that pops up, under 'Show Type', click 'Browsed by an individual (window)' and click OK
    1. Present the slideshow
    1. Double click on the title bar at the very top of the slideshow window or click on the 'Restore down' button that's between 'minimize' and 'close' on the top right
-   1. Move the mouse curser to the edges of the window to resize it. 
+   1. Move the mouse curser to the edges of the window and drag to resize the window.  
    1. Repeat the above two steps for the discord app window. Place the two windows side-by-side, neither of them maximised. Look at the image above for inspiration.
    1. Advancing slides on the slideshow is by clicking on the arrows at the bottom of the window. No need for alt-tabs.
 
