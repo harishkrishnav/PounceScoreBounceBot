@@ -94,7 +94,7 @@ python quizbot.py
 ## Some tips and tricks when running a quiz
  - Running Discord on thr browser may not allow for many features. It is recommended that everyone run Discord on the [desktop or mobile application](https://discordapp.com/download) and not on the browser. 
  
- - It needn't be the quizmaster running the bot. In fact, the bot can be running on a server machine in the background for weeks and this machine need not have the discord app. (I'm currently figuring out how to set it up on Azure) 
+ - It needn't be the quizmaster running the bot. In fact, the bot can be running on a server machine in the background for weeks and this machine need not have the discord app. One such solution is to use [Heroku](https://www.heroku.com/). In Heroku, you'll need to create a file named `Procfile` which has this one line `worker: python <quizbot.py?`
  
 #### Assigning teams
 - Team assignment of a participant to say `team1` is by assigning them the role `team1`. 
