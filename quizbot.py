@@ -46,7 +46,17 @@ example !clearThis
 all messages in that caller's channel are deleted
 action on channels bounce-guesses, pounce-guesses, scores  when sender has role quizmaster, scorer
 
+- !resetRoles
+example !resetRoles
+all members of the guild with a role beginning with team are removed from the role
+action when sender has role quizmaster, scorer, admin
+
+- !join or !assignMe
+example !join
+if member does not have a role beginning with "team", assigned a random team from teams that have least members
 """
+
+import random
 
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
@@ -67,8 +77,7 @@ try:
 except FileNotFoundError:
     # otherwise, we take the token and guild ID as inputs, and write to 
     # .env for ease of use next time
-    print("Setting up the bot for your server For details, refer to \
-            \nhttps://github.com/harishkrishnav/PounceScoreBounceBot\#running-the-bot-the-first-time")
+    print("Setting up the bot for your server For details, refer to \nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
 
     token = input("Enter bot developer token: ") 
     # You can find this in https://discordapp.com/developers/applications 
@@ -94,6 +103,7 @@ whitelistChannels = ['general','discord-and-bot-help'] #these channels are not t
 commonChannels = {}
 teamChannels = {}
 scores = {}
+teamSizeCount = {}
 
 @bot.command(name="broadcast", help="")
 async def broadcastToAllTeams(message):
@@ -115,6 +125,12 @@ async def on_ready():
     
     for team in teamChannels:
         scores[team] = 0
+    
+    for role in guild.roles:
+        if role.name.startswith("team"):
+            teamNo = int(''.join(char for char in role.name if char.isdigit()))
+            if teamNo <= numberOfTeams:
+                teamSizeCount[role] = 0
 
     await broadcastToAllTeams("Welcome to the quiz! This is your team's private text channel.\nCommands for the bot:\n`!p your guess here` or `!pounce your guess here` to pounce,\n`!b your guess here` or `!bounce your guess here` to answer on bounce,\n`!scores` to see the scores.")
     
@@ -249,6 +265,45 @@ async def clearThis(ctx, *args, **kwargs):
         deleted = await channel.purge(limit=1000)
         if not len(deleted):
             break
+    return 
+
+@bot.command(name="resetRoles", aliases = ["unassignAll", "resetTeams"], help="remove all team roles")
+async def resetRoles(ctx, *args, **kwargs):
+    author = ctx.message.author
+    authorRoles = [str(role).lower() for role in author.roles[1:]]
+    if 'quizmaster' not in authorRoles and 'scorer' not in authorRoles and 'admin' not in authorRoles:
+        await ctx.send("Only a quizmaster or admin or scorer can assign or unassign teams.")
+        return
+    
+    guild =  bot.get_guild(int(guildId))
+    for member in guild.members:
+        for role in member.roles:
+            if role.name.startswith("team"):
+                try:
+                    await member.remove_roles(role)
+                    response = 'Removing {} from {}.'.format(str(member.name),str(role.name))
+                    await ctx.send(str(response))
+                except:
+                    print("Did not remove",member,"from",role,"because of permissions. Make the bot an admin and run this again.")
+    return 
+
+@bot.command(name="assignMe", aliases = ["join", "joinTeam"], help="join a team")
+async def assignRoles(ctx, *args, **kwargs):
+    author = ctx.message.author
+    authorRoles = [str(role).lower() for role in author.roles[1:]]
+    for role in authorRoles:
+        if role.startswith("team"):
+            await ctx.send('You are already in {}. Please contact the quizmaster if you need help.'.format(role))
+            return
+    
+    smallestTeamSize = min(teamSizeCount.values())
+    smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]
+    roleToAssign = random.choice(smallestTeams)
+    print(author, "assigned to", roleToAssign)
+    teamSizeCount[roleToAssign] += 1
+    await author.add_roles(roleToAssign)
+    response = 'Assigning {} to {}.'.format(str(author),str(roleToAssign)) 
+    await ctx.send(str(response))
     return 
 
 
