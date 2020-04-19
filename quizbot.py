@@ -175,7 +175,19 @@ async def bounce(ctx, *args, **kwargs):
 
 @bot.command(name="scores", aliases = ["pointstable"], help="Displays the scores")
 async def displayScores(ctx, *args, **kwargs):
-    response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
+    guild =  bot.get_guild(int(guildId))
+    teamDistribution = {}
+    for team in scores:
+        teamDistribution[team] = []
+    for member in guild.members:
+        for role in member.roles:
+            if role.name.startswith("team"):
+                try:
+                    assert role.name in teamDistribution
+                    teamDistribution[role.name].append(member)
+                except:
+                    print("Please check that teamnames match roles (no spaces)")
+    response = '\n'+'\n\n'.join('{}\t\t{}\t\t\t{}'.format(str(team),str(scores[team]),', '.join(member.name.split("#")[0] for member in teamDistribution[team])) for team in scores)
     await ctx.message.channel.send(response)
 
 @bot.command(name="s", aliases = ["plus"], help="for scorers and quizmasters to update scores")
