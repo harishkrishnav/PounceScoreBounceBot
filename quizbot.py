@@ -19,7 +19,7 @@ every team channel sees "Guess on the bounce by <team>'s <sender's name> : mahat
 
 - !scores or !pointstable
 example: !scores
-sender's channel sees "<team>:<score>" one team per line
+sender's channel sees "<team> <score> <all members with the role as the team>" one team per line
 
 - !s or !plus
 example: !s -5 t2 t4 t6
@@ -187,7 +187,7 @@ async def displayScores(ctx, *args, **kwargs):
                     teamDistribution[role.name].append(member)
                 except:
                     print("Please check that teamnames match roles (no spaces)")
-    response = '\n'+'\n\n'.join('{}\t\t{}\t\t\t{}'.format(str(team),str(scores[team]),', '.join(member.name.split("#")[0] for member in teamDistribution[team])) for team in scores)
+    response = '\n\n'.join('{}\t{}\t{}'.format(str(team),str(scores[team]).center(8),(', '.join(member.name.split("#")[0] for member in teamDistribution[team]).center(60))) for team in scores)
     await ctx.message.channel.send(response)
 
 @bot.command(name="s", aliases = ["plus"], help="for scorers and quizmasters to update scores")
