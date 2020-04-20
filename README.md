@@ -51,7 +51,7 @@ Scoring is through one command. This can be done by a scorer too:
 scorer's view
 
 
-Typing `!scores` at any time from any channel will display all the scores. 
+Typing `!scores` at any time from any channel will display all the scores and the members of each team. 
 
 If there are connectivity issues, the bot may reload and the scores may reset to zero. A warning will be displayed and the scores will have to be entered again. Pounce/bounce should not be affected. 
 
@@ -84,7 +84,7 @@ pip install -r requirements.txt
 python quizbot.py
 ```
 7. The command window will prompt for the token. You would have noticed this when performing step 2 above. You can find this in https://discordapp.com/developers/applications and in the Bot menu in the settings tab. Copy-paste this long token here and hit enter.
-8. The prompt will not ask for a guild ID. Right click on the guild icon in the bar on the left and click on copy ID ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in the prompt and hit enter.
+8. The prompt will now ask for a guild ID. Right click on the guild icon in the bar on the left and click on copy ID ([may need to toggle an appearance switch](https://discordia.me/en/developer-mode)). Paste this in the prompt and hit enter.
 9. You will notice that the folder now has a `.env` file with the credentials. You do not need to confront the prompts for this again.
 
 
