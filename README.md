@@ -9,6 +9,11 @@ This is a discord bot to handle pounces, bounces, scoring, and cleaning up in a 
 ### NEW - Quiz Control and persistent storage of scores
 Use the commands `!startQuiz` and `!stopQuiz` to set the number of teams, clear all channels, and start saving scores into a file. The `!startQuiz <number of teams>` command must necessarily be run to initialise the bot and to have a quiz.
 
+### NEW: Team allocation
+Anyone without a team can type `!joinTeam` or `!assignMe` or `!join` from anywhere to be assigned a team randomly to a team that has the least number of members. 
+A quizmaster or scorer or admin can reset all team allocations by typing `!resetRoles` or `!unassignAll`. 
+Note that if the quizmaster wants to assign teams, it will have to be done manually. The number of teams must be set correctly when starting the bot. 
+
 ### Pouncing
 
 To pounce, a participant simply types
@@ -35,10 +40,6 @@ Bounce answers are broadcast:
 ![bounce](https://i.imgur.com/3ShWRlm.png "team1 submit an answer on bounce")
 team1's view. The stream can be popped out and pinned to the top.
 
-### NEW: Team allocation
-Anyone without a team can type `!joinTeam` or `!assignMe` or `!join` from anywhere to be assigned a team randomly to a team that has the least number of members. 
-A quizmaster or scorer or admin can reset all team allocations by typing `!resetRoles` or `!unassignAll`. 
-Note that if the quizmaster wants to assign teams, it will have to be done manually. The number of teams must be set correctly when starting the bot. 
 
 ### Scoring
 
