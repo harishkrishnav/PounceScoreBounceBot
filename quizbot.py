@@ -7,7 +7,7 @@ The guild must have the following with appropriate permissions
 
 Summary of commands
 
-- !newQuiz or !startQuiz
+- !newQuiz or !startQuiz or !setNumTeams
 example: !newQuiz 7
 sets number of teams, clears channels, creates new scores.txt file, sends welcome messages
 
@@ -163,7 +163,7 @@ async def endQuiz(ctx, *args, **kwargs):
         os.remove("scores.txt")
 
 
-@bot.command(name="startQuiz", aliases = ["newquiz", "newQuiz", "startquiz"], help="Reset everything and start a new quiz")
+@bot.command(name="setNumTeams", aliases = ["startQuiz", "newquiz", "newQuiz", "startquiz"], help="Reset everything and start a new quiz with an input number of teams")
 async def newQuiz(ctx, *args, **kwargs):
     author = ctx.message.author
     authorRoles = [str(role).lower() for role in author.roles[1:]]
