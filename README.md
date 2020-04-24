@@ -7,7 +7,7 @@ Discord + this bot eliminates the need for paid p2p subscriptions, time limits, 
 This is a discord bot to handle pounces, bounces, scoring, and cleaning up in a quiz. This repo is currently under development and all feature suggestions, bug reports, pull requests are welcome.
 
 ### NEW - Quiz Control and persistent storage of scores
-Use the commands `!startQuiz` and `!stopQuiz` to set the number of teams, clear all channels, and start saving scores into a file. The `!startQuiz <number of teams>` command must necessarily be run to initialise the bot and to have a quiz.
+Use the commands `!startQuiz` and `!stopQuiz` to set the number of teams, clear all channels, and start saving scores into a file. The `!startQuiz <number of teams>` or `!setNumTeams <number of teams>` command must necessarily be run to initialise the bot and to have a quiz.
 
 ### NEW - Team allocation
 Anyone without a team can type `!joinTeam` or `!assignMe` or `!join` from anywhere to be assigned a team randomly to a team that has the least number of members. 
