@@ -57,6 +57,8 @@ if member does not have a role beginning with "team", assigned a random team fro
 """
 
 import random
+import os
+import json
 
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
@@ -104,17 +106,43 @@ commonChannels = {}
 teamChannels = {}
 scores = {}
 teamSizeCount = {}
+quizOn = False
 
 @bot.command(name="broadcast", help="")
 async def broadcastToAllTeams(message):
     for team in teamChannels:
         await teamChannels[team].send(message)
 
-@bot.event
-async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
+#loadQuiz
+#warning, setscores, set variables, display scores
 
+#newQuiz
+#warning, clear channels, delete scores, create new dicts, create new scores, save variables dict, welcome broadcasts, team roles option,  
+
+@bot.command(name="newQuiz", aliases = ["newquiz", "startQuiz", "startquiz"], help="Reset everything and start a new quiz")
+async def newQuiz(ctx, *args, **kwargs):
+    author = ctx.message.author
+    authorRoles = [str(role).lower() for role in author.roles[1:]]
+    if 'quizmaster' not in authorRoles and 'admin' not in authorRoles:
+        await ctx.send("Only an admin or quizmaster can reset everything and start a quiz.")
+        return
+
+    response = "Warning! This will clear all channels and reset all scores."
+    await ctx.send(response)
+
+    if not len(args):
+        await ctx.send("This command must be issued along with the number of participating teams like this `!newQuiz 7` for starting a quiz with 7 teams. Existing member roles will not be affected.")
+        return
+    
+    numberOfTeams = int(args[-1])
+    response = "Creating a quiz with {} teams. \nClearing all channels. This message and everything above might soon disappear.".format(str(numberOfTeams))
+    await ctx.send(response)
+    quizOn = True
+
+    # make dicts of all team and common channels
     guild =  bot.get_guild(int(guildId))
+    commonChannels.clear()
+    teamChannels.clear()
     for channel in guild.text_channels:
         if channel.name.startswith('team') and channel.name.endswith('-chat'): #I don't want to import re
             teamNo = int(''.join(char for char in channel.name if char.isdigit()))
@@ -122,29 +150,74 @@ async def on_ready():
                 teamChannels[channel.name.replace('-chat','')] = bot.get_channel(channel.id)
         elif channel.name not in whitelistChannels:
             commonChannels[channel.name] = bot.get_channel(channel.id)
+
+    #clear everything
+    for channel in list(commonChannels.values())+list(teamChannels.values()):
+        while(True):
+            deleted = await channel.purge(limit=1000)
+            if not len(deleted):
+                break
     
+    #reset scores
+    scores.clear()
     for team in teamChannels:
         scores[team] = 0
-    
+
+    #create score file
+    #json.dump(scores, open("scores.txt",'w'))
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
+
+    #set team membership counts to 0
+    teamSizeCount.clear()
     for role in guild.roles:
         if role.name.startswith("team"):
             teamNo = int(''.join(char for char in role.name if char.isdigit()))
             if teamNo <= numberOfTeams:
                 teamSizeCount[role] = 0
+    #Welcome texts
+    response = "The bot is ready to bring the pounces to you"
+    await commonChannels[pounceChannel].send(response)    
+    response = "Guesses on bounce you make by with `!bounce` or `!b` command appear here"
+    await commonChannels[bounceChannel].send(response)
+    response = "Welcome! Below are the commands you can use to set scores. Teams are always abbreviated as t1 t2 etc.\n`!s -10 t3 t4 t8` to add -10 points to teams3,4,5;\n`!s 5 t2` to add 5 points to team2\n`!plus 10 t3 t4 t8` to give 10 points to teams 3,4,8 ;\n`!minus 5 t1 t2` to deduct 5 points from team1 and team2"
+    await commonChannels[scoreChannel].send(response)
 
     await broadcastToAllTeams("Welcome to the quiz! This is your team's private text channel.\nCommands for the bot:\n`!p your guess here` or `!pounce your guess here` to pounce,\n`!b your guess here` or `!bounce your guess here` to answer on bounce,\n`!scores` to see the scores.")
     await broadcastToAllTeams("If you are seeing this message in the middle of a quiz, alert the quizmaster. The scores might need to be checked.")
-
-    response = "The bot is ready to bring the pounces to you"
-    await commonChannels[pounceChannel].send(response)
     
-    response = "Guesses on bounce you make by with `!bounce` or `!b` command \
-appear here"
-    await commonChannels[bounceChannel].send(response)
-    
-    response = "The scores have been reset. If this has happened while a quiz was in progress, there was a connection issue."
-    await commonChannels[scoreChannel].send(response)
+    await ctx.send("All team channels have been cleared, and all scores have been set to 0. You can begin the quiz. \nIf you want to unassign all team roles, make the bot an admin and issue the command `!resetTeams`. Those who wish to participate have to type `!join` to be automatically assigned a ream.")
 
+    return
+
+
+@bot.event
+async def on_ready():
+    print(f'{bot.user.name} has connected to Discord!')
+
+    if os.path.exists('scores.txt'):
+        with open("scores.txt") as scoresFileObject:
+            scores = json.load(scoresFileObject)
+        #scores = json.load(open("scores.txt"))
+        for team in scores:
+            scores[team] = int(scores[team])
+        numberOfTeams = len(scores)
+        print("The bot reset and loaded the scores")
+        guild =  bot.get_guild(int(guildId))
+        for channel in guild.text_channels:
+            if channel.name.startswith('team') and channel.name.endswith('-chat'): #I don't want to import re
+                teamNo = int(''.join(char for char in channel.name if char.isdigit()))
+                if teamNo <= numberOfTeams:
+                    teamChannels[channel.name.replace('-chat','')] = bot.get_channel(channel.id)
+            elif channel.name not in whitelistChannels:
+                commonChannels[channel.name] = bot.get_channel(channel.id)
+        quizOn=True
+        await broadcastToAllTeams("The bot had to reset for reasons unknown but the scores must have been retained. Below are the scores after the last update. Please alert the quizmaster if there's an error.")
+        response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
+        await broadcastToAllTeams(response)
+    else:
+        print("Please !startQuiz")
+    
 
 @bot.command(name="p", aliases = ["pounce", "P", "punce", "ponce", "puonce"], 
              help="Pounce: type `!p your guess` or `!pounce your guess` to send \"your guess\" to the quizmaster")
@@ -211,6 +284,8 @@ async def updateScores(ctx, *args, **kwargs):
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     channel = commonChannels[scoreChannel]
     await channel.send(response)
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
 
     for team in teams:
         channel=teamChannels[team]
@@ -239,6 +314,8 @@ async def minus(ctx, *args, **kwargs):
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     channel = commonChannels[scoreChannel]
     await channel.send(response)
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
 
     for team in teams:
         channel=teamChannels[team]
@@ -315,7 +392,8 @@ async def assignRoles(ctx, *args, **kwargs):
     print(author, "assigned to", roleToAssign)
     teamSizeCount[roleToAssign] += 1
     await author.add_roles(roleToAssign)
-    response = 'Assigning {} to {}.'.format(str(author),str(roleToAssign)) 
+    authorName = str(author).split("#")[0]
+    response = 'Assigning {} to {}.'.format(authorName,str(roleToAssign)) 
     await ctx.send(str(response))
     return 
 
