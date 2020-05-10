@@ -73,7 +73,7 @@ import json
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
         getTeamChannels, unassignTeams, deleteFiles, convertToImages,
-        updateSlides, saveSlideState, recoverSlideState)
+        updateSlides, saveSlideState, recoverSlideState, getAuthorizedServer)
 
 from discord.ext import commands
 import discord
@@ -155,6 +155,8 @@ async def broadcastToAllTeams(message):
     )
 async def loadfile(ctx, *args, **kwargs):
     global presentationLoaded
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(
             ctx,
             'Only ',
@@ -238,6 +240,8 @@ async def nextSlide(ctx, *args, **kwargs):
     global presentationLoaded
     global slideNumber
     global slides
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(
             ctx,
             'Only ',
@@ -279,6 +283,8 @@ async def prevSlide(ctx, *args, **kwargs):
     global presentationLoaded
     global slideNumber
     global slides
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(
             ctx,
             'Only ',
@@ -320,6 +326,8 @@ files channel and then run `!loadfile`"
 send \"your guess\" to the quizmaster and all teams"
     )
 async def bounce(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -341,6 +349,8 @@ async def bounce(ctx, *args, **kwargs):
     help="Displays the scores"
     )
 async def displayScores(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -361,6 +371,8 @@ async def displayScores(ctx, *args, **kwargs):
     help="Stop the quiz and clear channels"
     )
 async def endQuiz(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(ctx,'Only ', ' can end this quiz','quizmaster', 'admin')
     if not auth:
         await ctx.send(response)
@@ -397,6 +409,8 @@ async def endQuiz(ctx, *args, **kwargs):
     help="Reset everything and start a new quiz with an input number of teams"
     )
 async def newQuiz(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(ctx,'Only ', ' can end this quiz','quizmaster', 'admin')
     if not auth:
         await ctx.send(response)
@@ -542,6 +556,8 @@ there's a discrepancy.")
 \"your guess\" to the quizmaster"
     )
 async def pounce(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -563,6 +579,8 @@ async def pounce(ctx, *args, **kwargs):
     help="for scorers and quizmasters to update scores"
     )
 async def updateScores(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -608,6 +626,8 @@ async def updateScores(ctx, *args, **kwargs):
     help="for scorers and quizmasters to update scores"
     )
 async def minus(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -650,6 +670,8 @@ async def minus(ctx, *args, **kwargs):
     help="delete all messages in all important channel and resets score to 0"
     )
 async def clearAll(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(
             ctx,
             "Only ",
@@ -671,6 +693,8 @@ async def clearAll(ctx, *args, **kwargs):
 
 @bot.command(name="clearThis", help="delete all messages in a channel")
 async def clearThis(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     channel = ctx.message.channel
     offlimitChannels = [
             commonChannels[pounceChannel],
@@ -701,6 +725,8 @@ async def clearThis(ctx, *args, **kwargs):
     help="remove all team roles"
     )
 async def resetRoles(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     auth, response = getAuthorized(
             ctx,
             "Only ",
@@ -725,6 +751,8 @@ assign roles or ask participants to `!join` once `!startQuiz` is run")
     help="join a team"
     )
 async def assignRoles(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
@@ -766,6 +794,8 @@ async def assignRoles(ctx, *args, **kwargs):
 
 @bot.event
 async def on_command_error(ctx, error):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
     with open('err.log', 'a') as f:
         f.write(f'Unhandled message: {error}\n')
         await ctx.send("The command could not be run. Please type `!help` for the list of available commands")

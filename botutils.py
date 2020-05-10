@@ -30,6 +30,14 @@ def getAuthorized(ctx,  message_start, message_end, *authorizedRoles):
     response = message_start+', or '.join(authorizedRoles)+message_end
     return False, response
 
+def getAuthorizedServer(bot, guildId, ctx):
+    guild = bot.get_guild(int(guildId))
+    if ctx.message.guild != guild:
+        print("Ignoring message sent from other server")
+        return False
+    else:
+        return True
+
 def getAuthorAndName(ctx):
     """
     Takes the context variable from the calling function and returns the author
