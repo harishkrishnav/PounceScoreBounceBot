@@ -175,6 +175,10 @@ async def loadfile(ctx, *args, **kwargs):
         print(response)
         ctx.message.channel.send(response)
         return
+
+    if not os.path.isdir(presentationDirPath):
+        os.mkdir(presentationDirPath)
+
     deleteFiles(presentationDirPath, 'jpg', 'pdf')
     
     message = await commonChannels[fileChannel].history(limit=1).flatten()
