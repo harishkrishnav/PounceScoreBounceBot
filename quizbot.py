@@ -115,6 +115,7 @@ numberOfTeams = 8
 bounceChannel = 'bounce-guesses'
 pounceChannel = 'pounce-guesses'
 scoreChannel  = 'scores'
+fileChannel = 'file-upload'
 #whitelistChannels = ['general','discord-and-bot-help'] 
 whitelistChannels = [
         'general',                                                              
@@ -172,7 +173,28 @@ async def loadfile(ctx, *args, **kwargs):
         print(response)
         ctx.message.channel.send(response)
         return
-    # deleteFiles(presentationDirPath, 'jpg', 'pdf')
+    deleteFiles(presentationDirPath, 'jpg', 'pdf')
+    
+    message = await commonChannels[fileChannel].history(limit=1).flatten()
+    if len(message) > 0:
+        message = message[0]
+        if len(message.attachments) > 0: 
+            print(message.attachments[0])
+            print(message.attachments[0].filename)
+            global presentationFileName
+            presentationFileName = message.attachments[0].filename
+            presentationPath = os.path.join(presentationDirPath,presentationFileName)
+            print(presentationPath)
+            await message.attachments[0].save(presentationPath)
+        else:
+            response = "The last message sent to the channel needs the file attached"
+            await ctx.message.channel.send(response)
+            return
+    else:
+        response = "Send the file attached to the files channel"
+        await ctx.message.channel.send(response)
+        return
+
     # if the file does not exist in the message, return error
     # if file exists in the message, download file into dir
     global slides

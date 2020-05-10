@@ -1,3 +1,8 @@
+import discord 
+from pdf2image import convert_from_path
+import os
+import pickle
+
 async def deleteAllMessages(bot, guildId, whitelistChannels):
     """
     @param bot the instance of the running bot in use by the calling function
@@ -141,8 +146,6 @@ async def unassignTeams(bot, guildId, ctx):
 permissions. Make the bot an admin and run this again.")
 
 
-from pdf2image import convert_from_path
-import os
 
 def deleteFiles(directoryPath, *extensions):
     for extension in extensions:
@@ -166,7 +169,6 @@ def convertToImages(presentationDirPath, presentationFileName):
 
     return imagelist
 
-import discord 
 
 async def updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel):
     with open(filename, 'rb') as f:
@@ -189,7 +191,6 @@ async def updateSlides(ctx, filename, commonChannels, teamChannels, bounceChanne
         picture = discord.File(f)
         await ctx.message.channel.send(file=picture)
 
-import pickle
 
 def saveSlideState(saveTo, state):
     with open(saveTo, 'wb') as f:
