@@ -1,4 +1,8 @@
 *.env
 *.log
 *scores.txt
+*slides.pkl
+__pycache__/
 tags
+tmp/
+

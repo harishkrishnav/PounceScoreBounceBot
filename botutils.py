@@ -139,3 +139,64 @@ async def unassignTeams(bot, guildId, ctx):
                 except:
                     print("Did not remove",member,"from",role,"because of \
 permissions. Make the bot an admin and run this again.")
+
+
+from pdf2image import convert_from_path
+import os
+
+def deleteFiles(directoryPath, *extensions):
+    for extension in extensions:
+        filelist = [f for f in os.listdir(directoryPath) if f.endswith(extension)]
+        print("deleting", filelist)
+        for f in filelist:
+            os.remove(os.path.join(directoryPath, f))
+
+def convertToImages(presentationDirPath, presentationFileName):
+    deleteFiles(presentationDirPath, '.jpg')
+    presentationFilePath = os.path.join(presentationDirPath, presentationFileName)
+
+    imagelist = []
+
+    pages = convert_from_path(presentationFilePath, 100)
+    for index, page in enumerate(pages):
+        filename = str(index)+'.jpg'
+        page.save(os.path.join(presentationDirPath, filename), 'JPEG')
+        imagelist.append(filename)
+        print("generating page, ", filename)
+
+    return imagelist
+
+import discord 
+
+async def updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel):
+    with open(filename, 'rb') as f:
+        picture = discord.File(f)
+        channel = commonChannels[bounceChannel]
+        await channel.send(file=picture)
+    with open(filename, 'rb') as f:
+        picture = discord.File(f)
+        channel = commonChannels[scoreChannel]
+        await channel.send(file=picture)
+    for team in teamChannels:
+        with open(filename, 'rb') as f:
+            picture = discord.File(f)
+            await teamChannels[team].send(file=picture)
+    with open(filename, 'rb') as f:
+        picture = discord.File(f)
+        channel = commonChannels[pounceChannel]
+        await channel.send(file=picture)
+    with open(filename, 'rb') as f:
+        picture = discord.File(f)
+        await ctx.message.channel.send(file=picture)
+
+import pickle
+
+def saveSlideState(saveTo, state):
+    with open(saveTo, 'wb') as f:
+        pickle.dump(state, f)
+
+def recoverSlideState(savePath):
+    with open(savePath, 'rb') as f:
+        state = pickle.load(f)
+    return state
+

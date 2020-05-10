@@ -72,9 +72,11 @@ import json
 
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
-        getTeamChannels, unassignTeams)
+        getTeamChannels, unassignTeams, deleteFiles, convertToImages,
+        updateSlides, saveSlideState, recoverSlideState)
 
 from discord.ext import commands
+import discord
 bot = commands.Bot(command_prefix='!')
 
 ### Get bot token and guild ID from env file, make one if it doesn't exist ###
@@ -117,9 +119,9 @@ scoreChannel  = 'scores'
 whitelistChannels = [
         'general',                                                              
         'discord-and-bot-help',                                                 
-#        'queries-casualtalk',                                                   
-#        'test-channel',                                                         
-#        'questions-and-answers'
+        'queries-casualtalk',                                                   
+        'test-channel',                                                         
+        'questions-and-answers'
         ] #these channels are not cleared during reset
 # whitelistChannels are not cleared during reset
 # It is assumed that every team has a name like `teamX-chat`
@@ -128,6 +130,12 @@ commonChannels = {}
 teamChannels = {}
 scores = {}
 quizOn = False
+
+presentationDirPath = 'tmp'
+presentationFileName = 'pres.pdf'
+presentationLoaded = False
+slideNumber = 0
+slides = []
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command to see the scores. However, \
@@ -139,6 +147,149 @@ the `!startQuiz` command."
 async def broadcastToAllTeams(message):
     for team in teamChannels:
         await teamChannels[team].send(message)
+
+@bot.command(
+    name="loadfile",
+    help="Load a PDF presentation uploaded to the files channel"
+    )
+async def loadfile(ctx, *args, **kwargs):
+    global presentationLoaded
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can load the presentation file',
+            'quizmaster'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    if presentationLoaded:
+        response = 'A presentation is already loaded'
+        print(response)
+        ctx.message.channel.send(response)
+        return
+    # deleteFiles(presentationDirPath, 'jpg', 'pdf')
+    # if the file does not exist in the message, return error
+    # if file exists in the message, download file into dir
+    global slides
+    slides = convertToImages(presentationDirPath, presentationFileName)
+    print(slides)
+    presentationLoaded = True
+    global slideNumber
+    slideNumber = -1
+    response = "Presentation loaded"
+    await ctx.message.channel.send(response)
+
+def save():
+    state = {}
+    state['presentationLoaded'] = presentationLoaded
+    state['slides'] = slides
+    state['slideNumber'] = slideNumber
+    saveSlideState('slides.pkl', state)
+    print("Saving:")
+    for key in state:
+        print(key, state[key])
+
+def load():
+    state = recoverSlideState('slides.pkl')
+    print("Loading:")
+    for key in state:
+        print(key, state[key])
+    global presentationLoaded
+    global slides
+    global slideNumber
+    presentationLoaded = state['presentationLoaded']
+    slides = state['slides']
+    slideNumber = state['slideNumber']
+
+
+@bot.command(
+    name="n",
+    aliases=["next",],
+    help="Move forward one slide"
+    )
+async def nextSlide(ctx, *args, **kwargs):
+    global presentationLoaded
+    global slideNumber
+    global slides
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can change slides',
+            'quizmaster', 'scorer'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    if not presentationLoaded:
+        response = "Please load the presentation by uploading a file to the \
+files channel and then run `!loadfile`"
+        await ctx.message.channel.send(response)
+        return
+    if slideNumber == len(slides) - 1:
+        response = "The presentation is over. End Quiz?"
+        await ctx.message.channel.send(response)
+        return
+    while slideNumber < -1:
+        slideNumber += 1
+    slideNumber += 1
+    slideName = slides[slideNumber]
+    filename = os.path.join(presentationDirPath, slideName)
+
+    await updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel)
+    save()
+
+
+@bot.command(
+    name="prev",
+    aliases=["previous",],
+    help="Move back one slide"
+    )
+async def prevSlide(ctx, *args, **kwargs):
+    global presentationLoaded
+    global slideNumber
+    global slides
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can change slides',
+            'quizmaster', 'scorer'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    if not presentationLoaded:
+        response = "Please load the presentation by uploading a file to the \
+files channel and then run `!loadfile`"
+        await ctx.message.channel.send(response)
+        return
+    if slideNumber == 0:
+        response = "First slide of the presentation, cannot go back further"
+        await ctx.message.channel.send(response)
+        return
+    while slideNumber > len(slides):
+        slideNumber -= 1
+    slideNumber -= 1
+    slideName = slides[slideNumber]
+    filename = os.path.join(presentationDirPath, slideName)
+
+    await updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel)
+    save()
+
+
+
 
 @bot.command(
     name="b",
@@ -160,6 +311,8 @@ async def bounce(ctx, *args, **kwargs):
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
     await broadcastToAllTeams(response)
 
+
+
 @bot.command(
     name="scores",
     aliases = ["pointstable"],
@@ -178,6 +331,8 @@ async def displayScores(ctx, *args, **kwargs):
         )
     await ctx.message.channel.send(response)
 
+
+
 @bot.command(
     name="stopQuiz",
     aliases = ["stopquiz", "endQuiz", "endquiz"],
@@ -188,11 +343,13 @@ async def endQuiz(ctx, *args, **kwargs):
     if not auth:
         await ctx.send(response)
         return
-
     response = "Warning! This will clear all channels and end the quiz."
     await ctx.send(response)
     global quizOn
     quizOn=False
+    global presentationLoaded
+    presentationLoaded = False
+    deleteFiles(presentationDirPath, 'jpg', 'pdf')
     #clear everything
     await deleteAllMessages(bot, guildId, whitelistChannels)
     response = "The final scores are below (they're also saved in finalscores.txt)\n"
@@ -206,8 +363,10 @@ async def endQuiz(ctx, *args, **kwargs):
         json.dump([scores, teamDistribution], scoresFileObject)
     if os.path.exists("scores.txt"):
         os.remove("scores.txt")
-
+    if os.path.exists("slides.pkl"):
+        os.remove("slides.pkl")
     print("Quiz ended")
+
 
 
 @bot.command(
@@ -305,6 +464,7 @@ have to type `!join` to be automatically assigned a team.")
     return
 
 
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
@@ -313,6 +473,10 @@ async def on_ready():
         with open("scores.txt") as scoresFileObject:
             scoresInFile = json.load(scoresFileObject)
         print("The bot has reset and scores are being read from file")
+
+        if os.path.exists('slides.pkl'):
+            print("loading")
+            load()
 
         numberOfTeams = len(scoresInFile)
         global commonChannels
@@ -348,6 +512,7 @@ there's a discrepancy.")
         print("Please !startQuiz")
 
 
+
 @bot.command(
     name="p",
     aliases = ["pounce", "P", "punce", "ponce", "puonce"],
@@ -367,6 +532,8 @@ async def pounce(ctx, *args, **kwargs):
     await channel.send(response)
     response = "Pounce submitted"
     await ctx.message.channel.send(response)
+
+
 
 @bot.command(
     name="s",
@@ -410,6 +577,8 @@ async def updateScores(ctx, *args, **kwargs):
                 {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
+
+
 #TODO handle !minus better
 @bot.command(
     name="minus",
@@ -452,6 +621,8 @@ async def minus(ctx, *args, **kwargs):
                 {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
+
+
 @bot.command(
     name="clearAllChannels",
     help="delete all messages in all important channel and resets score to 0"
@@ -473,6 +644,8 @@ async def clearAll(ctx, *args, **kwargs):
         scores[team]=0
 
     return 
+
+
 
 @bot.command(name="clearThis", help="delete all messages in a channel")
 async def clearThis(ctx, *args, **kwargs):
@@ -498,6 +671,8 @@ async def clearThis(ctx, *args, **kwargs):
             break
     return 
 
+
+
 @bot.command(
     name="resetRoles",
     aliases = ["unassignAll", "resetTeams"],
@@ -519,6 +694,8 @@ async def resetRoles(ctx, *args, **kwargs):
     await ctx.send("Removed all team roles. The quizmaster can either manually \
 assign roles or ask participants to `!join` once `!startQuiz` is run")
     return 
+
+
 
 @bot.command(
     name="assignMe",
@@ -562,6 +739,7 @@ async def assignRoles(ctx, *args, **kwargs):
     response = 'Assigning {} to {}.'.format(authorName,str(roleToAssign)) 
     await ctx.send(str(response))
     return 
+
 
 
 @bot.event
