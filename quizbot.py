@@ -70,9 +70,9 @@ import random
 import os
 import json
 
-from .botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
+from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
-        getTeamChannels)
+        getTeamChannels, unassignTeams)
 
 from discord.ext import commands
 bot = commands.Bot(command_prefix='!')
@@ -92,20 +92,20 @@ except FileNotFoundError:
     # otherwise, we take the token and guild ID as inputs, and write to 
     # .env for ease of use next time
     print("Setting up the bot for your server. For details, refer to \
-            \nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
+\nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
     print("You will need to enter these credentials only the first time you \
-            run on a guild")
+run on a guild")
     token = input("Enter bot developer token from the bot menu in\
-            https://discordapp.com/developers/applications : ") 
+https://discordapp.com/developers/applications : ") 
     guildId = input("Enter Guild (Server) ID (right click on the server\
-            icon if you have enabled developer appearance): ") 
+icon if you have enabled developer appearance): ") 
     with open('.env', 'w+') as envfile:
         envfile.write('TOKEN='+token+'\n')
         envfile.write('GUILD='+guildId+'\n')
 except:
     print("An unknown exception occured. There might be a problem with the \
-            .env file or its contents. Try deleting the file and running \
-            this script again")
+.env file or its contents. Try deleting the file and running \
+this script again")
     raise
 
 ### Setting up variables to be used for running a Quiz ###
@@ -113,7 +113,14 @@ numberOfTeams = 8
 bounceChannel = 'bounce-guesses'
 pounceChannel = 'pounce-guesses'
 scoreChannel  = 'scores'
-whitelistChannels = ['general','discord-and-bot-help'] 
+#whitelistChannels = ['general','discord-and-bot-help'] 
+whitelistChannels = [
+        'general',                                                              
+        'discord-and-bot-help',                                                 
+#        'queries-casualtalk',                                                   
+#        'test-channel',                                                         
+#        'questions-and-answers'
+        ] #these channels are not cleared during reset
 # whitelistChannels are not cleared during reset
 # It is assumed that every team has a name like `teamX-chat`
 
@@ -124,8 +131,8 @@ quizOn = False
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command to see the scores. However, \
-        the quiz hasn't begun yet. If you are the quizmaster, you must run \
-        the `!startQuiz` command."
+the quiz hasn't begun yet. If you are the quizmaster, you must run \
+the `!startQuiz` command."
 
 ### Setting up the command methods. Sorted in alphabetical order ###
 @bot.command(name="broadcast", help="")
@@ -137,7 +144,7 @@ async def broadcastToAllTeams(message):
     name="b",
     aliases = ["bounce", "B", "bunce", "bonce", "buonce"], 
     help="Bounce: type `!b your guess` or `!bounce your guess` to \
-                 send \"your guess\" to the quizmaster and all teams"
+send \"your guess\" to the quizmaster and all teams"
     )
 async def bounce(ctx, *args, **kwargs):
     if not quizOn:
@@ -167,7 +174,8 @@ async def displayScores(ctx, *args, **kwargs):
     response = '\n\n'.join('{}\t{}\t{}'.format(
         str(team),
         str(scores[team]).center(8),
-        (', '.join(getTeamMembers(teamDistribution, team) for team in scores))
+        ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in scores
+        )
     await ctx.message.channel.send(response)
 
 @bot.command(
@@ -186,21 +194,20 @@ async def endQuiz(ctx, *args, **kwargs):
     global quizOn
     quizOn=False
     #clear everything
-    deleteAllMessages(bot, guildId, whitelistChannels)
-    
+    await deleteAllMessages(bot, guildId, whitelistChannels)
     response = "The final scores are below (they're also saved in finalscores.txt)\n"
     response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
     await ctx.send(response)
-    
     teamDistribution = getTeamDistribution(bot, guildId, scores, names=True)
     response = "The participants were\n"
     response += '\n'.join(str(team)+" : "+str(teamDistribution[team]) for team in teamDistribution)
     await ctx.send(response)
-
     with open("finalscores.txt","w") as scoresFileObject:
         json.dump([scores, teamDistribution], scoresFileObject)
     if os.path.exists("scores.txt"):
         os.remove("scores.txt")
+
+    print("Quiz ended")
 
 
 @bot.command(
@@ -219,14 +226,14 @@ async def newQuiz(ctx, *args, **kwargs):
 
     if not len(args):
         await ctx.send("This command must be issued along with the number of \
-                participating teams (example: `!newQuiz 7` for starting a quiz \
-                with 7 teams). Existing member roles will not be affected.")
+participating teams (example: `!newQuiz 7` for starting a quiz \
+with 7 teams). Existing member roles will not be affected.")
         return
     
     numberOfTeams = int(args[-1])
     response = "Creating a quiz with {} teams. \
-            \nClearing all channels. This message and everything above might \
-            soon disappear.".format(str(numberOfTeams))
+\nClearing all channels. This message and everything above might \
+soon disappear.".format(str(numberOfTeams))
     await ctx.send(response)
 
     global quizOn
@@ -234,14 +241,16 @@ async def newQuiz(ctx, *args, **kwargs):
     print("Quiz started!")
 
     # make dicts of all team and common channels
-    commonChannels.clear()
-    teamChannels.clear()
+    global commonChannels
+    global teamChannels
+    commonChannels = {}
+    teamChannels = {}
 
     teamChannels = getTeamChannels(bot, guildId, numberOfTeams)
     commonChannels = getCommonChannels(bot, guildId, whitelistChannels)
 
     #clear everything
-    deleteAllMessages()
+    await deleteAllMessages(bot, guildId, whitelistChannels)
 
     #reset scores
     scores.clear()
@@ -258,40 +267,40 @@ async def newQuiz(ctx, *args, **kwargs):
     await commonChannels[pounceChannel].send(response)    
 
     response = "Guesses on bounce you make by with `!bounce` or \
-            `!b` command appear here"
+`!b` command appear here"
     await commonChannels[bounceChannel].send(response)
 
     response = "Welcome! Below are the commands you can use to set scores. \
-            Teams are always abbreviated as t1 t2 etc.\
-            \n`!s -10 t3 t4 t8` to add -10 points to teams3,4,5;\
-            \n`!s 5 t2` to add 5 points to team2\
-            \n`!plus 10 t3 t4 t8` to give 10 points to teams 3,4,8 ;\
-            \n`!minus 5 t1 t2` to deduct 5 points from team1 and team2"
+Teams are always abbreviated as t1 t2 etc.\
+\n`!s -10 t3 t4 t8` to add -10 points to teams3,4,5;\
+\n`!s 5 t2` to add 5 points to team2\
+\n`!plus 10 t3 t4 t8` to give 10 points to teams 3,4,8 ;\
+\n`!minus 5 t1 t2` to deduct 5 points from team1 and team2"
     await commonChannels[scoreChannel].send(response)
 
     await broadcastToAllTeams("Welcome to the quiz! This is your \
-            team's private text channel.\
-            \nCommands for the bot:\
-            \n`!p your guess here` or `!pounce your guess here` to pounce,\
-            \n`!b your guess here` or `!bounce your guess here` to answer on bounce,\
-            \n`!scores` to see the scores.")
+team's private text channel.\
+\nCommands for the bot:\
+\n`!p your guess here` or `!pounce your guess here` to pounce,\
+\n`!b your guess here` or `!bounce your guess here` to answer on bounce,\
+\n`!scores` to see the scores.")
 
     await broadcastToAllTeams("If you are seeing this message in the middle \
-            of a quiz, alert the quizmaster. The scores might need to be checked.")
+of a quiz, alert the quizmaster. The scores might need to be checked.")
 
     await broadcastToAllTeams("\n1)Please have an identifiable nickname by \
-            right-clicking on your name on the right column and changing \
-            nickname (it won't affect your name in other discord guilds)\
-            \n2)Please mute your microphone\
-            \n3)Go to user settings -> notifications and turn off \
-            notifications for User Joined, User Leave, User Moved, Viewer \
-            Join, Viewer Leave")
+right-clicking on your name on the right column and changing \
+nickname (it won't affect your name in other discord guilds)\
+\n2)Please mute your microphone\
+\n3)Go to user settings -> notifications and turn off \
+notifications for User Joined, User Leave, User Moved, Viewer \
+Join, Viewer Leave")
     
     await ctx.send("All team channels have been cleared, and all scores have \
-            been set to 0. You can begin the quiz. \
-            \nIf you want to unassign all team roles, make the bot an admin \
-            and issue the command `!resetTeams`. Those who wish to participate \
-            have to type `!join` to be automatically assigned a team.")
+been set to 0. You can begin the quiz. \
+\nIf you want to unassign all team roles, make the bot an admin \
+and issue the command `!resetTeams`. Those who wish to participate \
+have to type `!join` to be automatically assigned a team.")
 
     return
 
@@ -306,10 +315,17 @@ async def on_ready():
         print("The bot has reset and scores are being read from file")
 
         numberOfTeams = len(scoresInFile)
-        teamChannels.clear()
-        commonChannels.clear()
+        global commonChannels
+        global teamChannels
+        teamChannels = {}
+        commonChannels = {}
         teamChannels = getTeamChannels(bot, guildId, numberOfTeams)
         commonChannels = getCommonChannels(bot, guildId, whitelistChannels)
+
+        for key in teamChannels.keys():
+            print(key, teamChannels[key])
+        for key in commonChannels.keys():
+            print(key, commonChannels[key])
         
         scores.clear()
         for team in teamChannels:
@@ -319,9 +335,9 @@ async def on_ready():
         quizOn=True
 
         await broadcastToAllTeams("The bot had to reset for reasons unknown \
-                but the scores must have been retained. Below are the scores \
-                after the last update. Please alert the quizmaster if \
-                there's a discrepancy.")
+but the scores must have been retained. Below are the scores \
+after the last update. Please alert the quizmaster if \
+there's a discrepancy.")
         response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scoresInFile)
         await broadcastToAllTeams(response)
 
@@ -336,7 +352,7 @@ async def on_ready():
     name="p",
     aliases = ["pounce", "P", "punce", "ponce", "puonce"],
     help="Pounce: type `!p your guess` or `!pounce your guess` to send \
-            \"your guess\" to the quizmaster"
+\"your guess\" to the quizmaster"
     )
 async def pounce(ctx, *args, **kwargs):
     if not quizOn:
@@ -375,6 +391,7 @@ async def updateScores(ctx, *args, **kwargs):
     points = int(args[0])
     teams = [team.replace('t','team') for team in args[1:]]
     for team in teams:
+        print("Updating score for ", team)
         scores[team]+=points
 
     sign = lambda x: ('+', '')[x<0]
@@ -450,7 +467,7 @@ async def clearAll(ctx, *args, **kwargs):
         await ctx.send(response)
         return
     
-    deleteAllMessages(bot, guildId, whitelistChannels)
+    await deleteAllMessages(bot, guildId, whitelistChannels)
 
     for team in teamChannels:
         scores[team]=0
@@ -497,10 +514,10 @@ async def resetRoles(ctx, *args, **kwargs):
         await ctx.send(response)
         return
     
-    unassignTeams(bot, guildId, ctx)
+    await unassignTeams(bot, guildId, ctx)
 
     await ctx.send("Removed all team roles. The quizmaster can either manually \
-            assign roles or ask participants to `!join` once `!startQuiz` is run")
+assign roles or ask participants to `!join` once `!startQuiz` is run")
     return 
 
 @bot.command(
@@ -532,6 +549,8 @@ async def assignRoles(ctx, *args, **kwargs):
         for role in member.roles:
             if role.name.startswith("team") and role in teamSizeCount:
                 teamSizeCount[role] += 1
+
+    author = ctx.message.author
 
     smallestTeamSize = min(teamSizeCount.values())
     smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]

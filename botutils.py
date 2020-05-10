@@ -1,10 +1,10 @@
-def deleteAllMessages(bot, guildId, whitelistChannels):
-"""
-@param bot the instance of the running bot in use by the calling function
-@param guildId the Guild ID in use by the calling function
-@param whitelistChannels the list of whitelisted channels from which messages 
+async def deleteAllMessages(bot, guildId, whitelistChannels):
+    """
+    @param bot the instance of the running bot in use by the calling function
+    @param guildId the Guild ID in use by the calling function
+    @param whitelistChannels the list of whitelisted channels from which messages 
         are not deleted
-"""
+    """
     guild =  bot.get_guild(int(guildId))
     for channel in guild.text_channels:
         if channel.name not in whitelistChannels:
@@ -14,9 +14,9 @@ def deleteAllMessages(bot, guildId, whitelistChannels):
                     break
 
 def getAuthorized(ctx,  message_start, message_end, *authorizedRoles):
-"""
-@param ctx 
-"""
+    """
+    @param ctx 
+    """
     author = ctx.message.author
     authorRoles = [str(role).lower() for role in author.roles[1:]]
     for role in authorizedRoles:
@@ -26,25 +26,25 @@ def getAuthorized(ctx,  message_start, message_end, *authorizedRoles):
     return False, response
 
 def getAuthorAndName(ctx):
-"""
-Takes the context variable from the calling function and returns the author
-object and the author display name, formatted.
-@param ctx the context passed to the calling function
-@return author the author object
-@return authorName the display name of the author
-"""
-    author = ctx.message.author()
+    """
+    Takes the context variable from the calling function and returns the author
+    object and the author display name, formatted.
+    @param ctx the context passed to the calling function
+    @return author the author object
+    @return authorName the display name of the author
+    """
+    author = ctx.message.author
     authorName = str(author.display_name).split("#")[0]
     return author, authorName
 
 def getCommonChannels(bot, guildId, whitelistChannels):
-"""
-@param bot the instance of the running bot in use by the calling function
-@param guildId the Guild ID in use by the calling function
-@param whitelistChannels the channels that are not on the commonChannels or on
-        the teamChannels
-@return commonChannels a dictionary mapping channel names to channel IDs
-"""
+    """
+    @param bot the instance of the running bot in use by the calling function
+    @param guildId the Guild ID in use by the calling function
+    @param whitelistChannels the channels that are not on the commonChannels or on
+            the teamChannels
+    @return commonChannels a dictionary mapping channel names to channel IDs
+    """
     guild = bot.get_guild(int(guildId))
     commonChannels = {}
     for channel in guild.text_channels:
@@ -56,12 +56,12 @@ def getCommonChannels(bot, guildId, whitelistChannels):
 
 
 def getTeamChannels(bot, guildId, numberOfTeams):
-"""
-@param bot the instance of the running bot in use by the calling function
-@param guildId the Guild ID in use by the calling function
-@param numberOfTeams the limit on the number of teams for the quiz
-@return teamChannels a dictionary mapping team names to channel IDs
-"""
+    """
+    @param bot the instance of the running bot in use by the calling function
+    @param guildId the Guild ID in use by the calling function
+    @param numberOfTeams the limit on the number of teams for the quiz
+    @return teamChannels a dictionary mapping team names to channel IDs
+    """
     guild = bot.get_guild(int(guildId))
     teamChannels = {}
     for channel in guild.text_channels:
@@ -74,12 +74,12 @@ def getTeamChannels(bot, guildId, numberOfTeams):
 
     
 def getTeamDistribution(bot, guildId, scores, names=False):
-"""
-@param bot the instance of the running bot in use by the calling function
-@param guildId the Guild ID in use by the calling function
-@param scores the scores dictionary that also tracks active teams
-@return teamDistribution Dictionary of teams and their members
-"""
+    """
+    @param bot the instance of the running bot in use by the calling function
+    @param guildId the Guild ID in use by the calling function
+    @param scores the scores dictionary that also tracks active teams
+    @return teamDistribution Dictionary of teams and their members
+    """
     guild =  bot.get_guild(int(guildId))
     teamDistribution = {}
     for team in scores:
@@ -95,26 +95,26 @@ def getTeamDistribution(bot, guildId, scores, names=False):
                         teamDistribution[role.name].append(member)
                 except:
                     print("Please check that teamnames match roles (no \
-                            spaces). Someone might have a role of a team \
-                            that isn't in this quiz.")
+spaces). Someone might have a role of a team \
+that isn't in this quiz.")
     return teamDistribution
 
 def getTeamMembers(teamDistribution, team):
-"""
-@param teamDistribution team distribution generated by getTeamDistribution
-@param team the team we are trying to get members of
-@return list of string display names of team members
-"""
+    """
+    @param teamDistribution team distribution generated by getTeamDistribution
+    @param team the team we are trying to get members of
+    @return list of string display names of team members
+    """
     memberList = []
     for member in teamDistribution[team]:
-        memberList.append(member.display_name.split(#)[0])
+        memberList.append(member.display_name.split("#")[0])
     return memberList
 
 def getTeam(author):
-"""
-Takes the author object and returns the team the author is a member of
-@param author the author object
-"""
+    """
+    Takes the author object and returns the team the author is a member of
+    @param author the author object
+    """
     tmp = []
     for role in author.roles[1:]:
         if role.name.startswith('team'):
@@ -122,11 +122,11 @@ Takes the author object and returns the team the author is a member of
     team = ', '.join(tmp)
     return team
 
-def unassignTeams(bot, guildId, ctx):
-"""
-@param bot the instance of the running bot in use by the calling function
-@param guildId the Guild ID in use by the calling function
-"""
+async def unassignTeams(bot, guildId, ctx):
+    """
+    @param bot the instance of the running bot in use by the calling function
+    @param guildId the Guild ID in use by the calling function
+    """
     guild =  bot.get_guild(int(guildId))
     for member in guild.members:
         for role in member.roles:
@@ -138,4 +138,4 @@ def unassignTeams(bot, guildId, ctx):
                     await ctx.send(str(response))
                 except:
                     print("Did not remove",member,"from",role,"because of \
-                            permissions. Make the bot an admin and run this again.")
+permissions. Make the bot an admin and run this again.")
