@@ -178,37 +178,24 @@ def convertToImages(presentationDirPath, presentationFileName):
     return imagelist
 
 
-async def updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel):
+async def updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel):
     url = ""
     with open(filename, 'rb') as f:
         picture = discord.File(f)
-        channel = commonChannels[bounceChannel]
+        channel = commonChannels[questionChannel]
         await channel.send(file=picture)
-    message = await commonChannels[bounceChannel].history(limit=1).flatten()
+    message = await commonChannels[questionChannel].history(limit=1).flatten()
     if len(message) > 0:
         message = message[0]
         if len(message.attachments) > 0: 
             print(message.attachments[0].url)
             url = message.attachments[0].url
+    channel = commonChannels[qmChannel]
+    await channel.send(url)
     channel = commonChannels[scoreChannel]
     await channel.send(url)
     for team in teamChannels:
         await teamChannels[team].send(url)
-    channel = commonChannels[pounceChannel]
-    await channel.send(url)
-
-    #with open(filename, 'rb') as f:
-    #    picture = discord.File(f)
-    #    channel = commonChannels[scoreChannel]
-    #    await channel.send(file=picture)
-    #for team in teamChannels:
-    #    with open(filename, 'rb') as f:
-    #        picture = discord.File(f)
-    #        await teamChannels[team].send(file=picture)
-    #with open(filename, 'rb') as f:
-    #    picture = discord.File(f)
-    #    channel = commonChannels[pounceChannel]
-    #    await channel.send(file=picture)
     response = "All teams have received the slide"
     await ctx.message.channel.send(response)
 

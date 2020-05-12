@@ -4,7 +4,7 @@ https://github.com/harishkrishnav/PounceScoreBounceBot/blob/master/README.md
 
 The guild must have the following with appropriate permissions
 - roles: quizmaster, scorer, team1, team2, ...
-- text channels: bounce-guesses, pounce-guesses, scores
+- text channels: quiz-questions, qm-panel, scores
 - text channels: team1, team2, ...
 
 Summary of commands
@@ -54,7 +54,7 @@ action only when sender has role quizmaster, scorer
 - !clearThis
 example !clearThis 
 all messages in that caller's channel are deleted
-action on channels bounce-guesses, pounce-guesses, scores  when sender has role quizmaster, scorer
+action on channels quiz-questions, qm-panel, scores  when sender has role quizmaster, scorer
 
 - !resetRoles
 example !resetRoles
@@ -112,8 +112,8 @@ this script again")
 
 ### Setting up variables to be used for running a Quiz ###
 numberOfTeams = 8
-bounceChannel = 'bounce-guesses'
-pounceChannel = 'pounce-guesses'
+questionChannel = 'quiz-questions'
+qmChannel = 'qm-panel'
 scoreChannel  = 'scores'
 fileChannel = 'file-upload'
 #whitelistChannels = ['general','discord-and-bot-help'] 
@@ -274,7 +274,7 @@ files channel and then run `!loadfile`"
     slideName = slides[slideNumber]
     filename = os.path.join(presentationDirPath, slideName)
 
-    await updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel)
+    await updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel)
     save()
 
 
@@ -317,7 +317,7 @@ files channel and then run `!loadfile`"
     slideName = slides[slideNumber]
     filename = os.path.join(presentationDirPath, slideName)
 
-    await updateSlides(ctx, filename, commonChannels, teamChannels, bounceChannel, pounceChannel, scoreChannel)
+    await updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel)
     save()
 
 
@@ -340,7 +340,7 @@ async def bounce(ctx, *args, **kwargs):
     author, authorName = getAuthorAndName(ctx)
     team = getTeam(author)
     response = '{}\'s {}: {}'.format(team, authorName, guess)
-    channel = commonChannels[bounceChannel]
+    channel = commonChannels[questionChannel]
     await channel.send(response)
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
     await broadcastToAllTeams(response)
@@ -463,11 +463,11 @@ soon disappear.".format(str(numberOfTeams))
 
     #Welcome texts
     response = "The bot is ready to bring the pounces to you"
-    await commonChannels[pounceChannel].send(response)    
+    await commonChannels[qmChannel].send(response)    
 
     response = "Guesses on bounce you make by with `!bounce` or \
 `!b` command appear here"
-    await commonChannels[bounceChannel].send(response)
+    await commonChannels[questionChannel].send(response)
 
     response = "Welcome! Below are the commands you can use to set scores. \
 Teams are always abbreviated as t1 t2 etc.\
@@ -570,7 +570,7 @@ async def pounce(ctx, *args, **kwargs):
     author, authorName = getAuthorAndName(ctx)
     team = getTeam(author)
     response = '\'{}\' pounced by {}\'s {}'.format(guess, team, authorName)
-    channel = commonChannels[pounceChannel]
+    channel = commonChannels[qmChannel]
     await channel.send(response)
     response = "Pounce submitted"
     await ctx.message.channel.send(response)
@@ -701,8 +701,8 @@ async def clearThis(ctx, *args, **kwargs):
         return 
     channel = ctx.message.channel
     offlimitChannels = [
-            commonChannels[pounceChannel],
-            commonChannels[bounceChannel],
+            commonChannels[qmChannel],
+            commonChannels[questionChannel],
             commonChannels[scoreChannel]
             ]
     auth, response = getAuthorized(
