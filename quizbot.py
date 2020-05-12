@@ -19,12 +19,12 @@ clears channels, creates new finalscores.txt file, deletes scores.txt, displays 
 
 - !p or !pounce 
 example: !pounce mahatma gandhi
-pounces-guesses channel sees "mahatma gandhi pounced by <teams>'s <sender's name>"
+qm-panel channel sees "Guess on pounce by <teams>'s <sender's name>: mahatma gandhi"
 sender's channel gets the message "Pounce submitted"
 
 - !b or !bounce
 example: !b mahatma gandhi
-bounces-guesses channel sees "<team>'s <sender's name> : mahatma gandhi"
+qm-panel channel sees "<team>'s <sender's name> : mahatma gandhi"
 every team channel sees "Guess on the bounce by <team>'s <sender's name> : mahatma gandhi"
 
 - !scores or !pointstable
@@ -44,6 +44,22 @@ example: !minus 5 t2 t4 t6
 scores-channel sees "<points> to <list of teams>. Points table now: <pointstable>"
 channels of teams with update see "<points> off your team score. Your score is now <total points>"
 action only when sender has role quizmaster, scorer
+
+- !loadfile
+example: !loadfile
+File loaded from channel file-upload into the quiz. !n and !prev can now be used.
+
+- !n or !next
+example: !n
+slideNumber updated and state of slide saved to file
+channels of teams, qm-panel, quiz-questions, and scores get a copy of the next image in the slideshow
+calling channel gets a confirmation message at the end
+
+- !prev
+example: !prev
+slideNumber updated and state of slide saved to file
+channels of teams, qm-panel, quiz-questions, and scores get a copy of the previous image in the slideshow
+calling channel gets a confirmation message at the end
 
 - !clearAllChannels
 example: !clearAllChannels
@@ -77,6 +93,11 @@ from botutils import (getTeam, getAuthorAndName, getTeamDistribution,
 
 from discord.ext import commands
 import discord
+
+#################################
+# Bot initialisation for server #
+#################################
+
 bot = commands.Bot(command_prefix='!')
 
 ### Get bot token and guild ID from env file, make one if it doesn't exist ###
@@ -110,6 +131,11 @@ except:
 this script again")
     raise
 
+#################################################################
+# Variable setup; global variables that keep track of channels, #
+# teams, scores, slides, and the like. Some error messages too. #
+#################################################################
+
 ### Setting up variables to be used for running a Quiz ###
 numberOfTeams = 8
 questionChannel = 'quiz-questions'
@@ -133,7 +159,7 @@ scores = {}
 quizOn = False
 
 presentationDirPath = 'tmp'
-presentationFileName = 'pres.pdf'
+presentationFileName = ''
 presentationLoaded = False
 slideNumber = 0
 slides = []
@@ -143,17 +169,175 @@ messageQuizNotOn = "This is the right command to see the scores. However, \
 the quiz hasn't begun yet. If you are the quizmaster, you must run \
 the `!startQuiz` command."
 
-### Setting up the command methods. Sorted in alphabetical order ###
-@bot.command(name="broadcast", help="")
-async def broadcastToAllTeams(message):
-    for team in teamChannels:
-        await teamChannels[team].send(message)
+############################################################################
+# Participant commands. Joining, pouncing, bouncing, clear channel, scores #
+############################################################################
+
+@bot.command(
+    name="assignMe",
+    aliases = ["join", "joinTeam"],
+    help="join a team"
+    )
+async def assignRoles(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    auth, response = getAuthorized(
+            ctx,
+            'You are already in ',
+            '. Please contact the quizmaster if you need help',
+            *[team for team in teamChannels])
+    if auth:
+        await ctx.send(response)
+        return
+    
+    # Initialising team sizes to 0 and counting them
+    guild =  bot.get_guild(int(guildId))
+    teamSizeCount = {}
+    for role in guild.roles:
+        if role.name in scores:
+            teamSizeCount[role] = 0
+
+    for member in guild.members:
+        for role in member.roles:
+            if role.name.startswith("team") and role in teamSizeCount:
+                teamSizeCount[role] += 1
+
+    author = ctx.message.author
+
+    # Picking a random team from the smallest ones to assign author to
+    smallestTeamSize = min(teamSizeCount.values())
+    smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]
+    roleToAssign = random.choice(smallestTeams)
+    print(author.display_name, "assigned to", roleToAssign)
+
+    # Assign the author to selected team
+    await author.add_roles(roleToAssign)
+    authorName = str(author.display_name).split("#")[0]
+    response = 'Assigning {} to {}.'.format(authorName,str(roleToAssign)) 
+    await ctx.send(str(response))
+    return 
+
+
+@bot.command(
+    name="b",
+    aliases = ["bounce", "B", "bunce", "bonce", "buonce"], 
+    help="Bounce: type `!b your guess` or `!bounce your guess` to \
+send \"your guess\" to the quizmaster and all teams"
+    )
+async def bounce(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    # Read the guess and send to all channels
+    guess = ' '.join([word for word in args])
+    author, authorName = getAuthorAndName(ctx)
+    team = getTeam(author)
+    response = '{}\'s {}: {}'.format(team, authorName, guess)
+    channel = commonChannels[qmChannel]
+    await channel.send(response)
+    response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
+    await broadcastToAllTeams(response)
+
+
+
+@bot.command(name="clearThis", help="delete all messages in a channel")
+async def clearThis(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    channel = ctx.message.channel
+    offlimitChannels = [
+            commonChannels[qmChannel],
+            commonChannels[questionChannel],
+            commonChannels[scoreChannel]
+            ]
+    auth, response = getAuthorized(
+            ctx,
+            "Only ", 
+            " can clear this channel",
+            'quizmaster', 'scorer', 'admin'
+            )
+    if channel in offlimitChannels and not auth:
+        await ctx.send(response)
+        return
+    # Clear messages. TODO port over to botutils.py, in a more general function
+    # than deleteAllMessages(bot, guild, whitelistChannels)
+    while(True):
+        deleted = await channel.purge(limit=1000)
+        if not len(deleted):
+            break
+    return 
+
+
+
+@bot.command(
+    name="scores",
+    aliases = ["pointstable"],
+    help="Displays the scores"
+    )
+async def displayScores(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    # Get team members, scores, generate a response and send
+    teamDistribution = getTeamDistribution(bot, guildId, scores)
+    response = '\n\n'.join('{}\t{}\t{}'.format(
+        str(team),
+        str(scores[team]).center(8),
+        ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in scores
+        )
+    await ctx.message.channel.send(response)
+
+
+
+@bot.command(
+    name="p",
+    aliases = ["pounce", "P", "punce", "ponce", "puonce"],
+    help="Pounce: type `!p your guess` or `!pounce your guess` to send \
+\"your guess\" to the quizmaster"
+    )
+async def pounce(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    # Read the guessed pounce and send it
+    guess = ' '.join([word for word in args])
+    author, authorName = getAuthorAndName(ctx)
+    team = getTeam(author)
+    response = 'Guess on pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
+    channel = commonChannels[qmChannel]
+    await channel.send(response)
+    response = "Pounce submitted"
+    await ctx.message.channel.send(response)
+
+
+#############################################
+# QM Slide operations: load, next, previous #
+#############################################
 
 @bot.command(
     name="loadfile",
     help="Load a PDF presentation uploaded to the files channel"
     )
 async def loadfile(ctx, *args, **kwargs):
+    # Authorisation
     global presentationLoaded
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
@@ -175,12 +359,11 @@ async def loadfile(ctx, *args, **kwargs):
         print(response)
         ctx.message.channel.send(response)
         return
-
+    # Clear the directory
     if not os.path.isdir(presentationDirPath):
         os.mkdir(presentationDirPath)
-
     deleteFiles(presentationDirPath, 'jpg', 'pdf')
-    
+    # Load file from most recent message sent on fileChannel
     message = await commonChannels[fileChannel].history(limit=1).flatten()
     if len(message) > 0:
         message = message[0]
@@ -200,9 +383,9 @@ async def loadfile(ctx, *args, **kwargs):
         response = "Send the file attached to the files channel"
         await ctx.message.channel.send(response)
         return
-
     # if the file does not exist in the message, return error
-    # if file exists in the message, download file into dir
+    # if file exists in the message, download file into presentationDirPath
+    # and generate slide images
     global slides
     slides = convertToImages(presentationDirPath, presentationFileName)
     print(slides)
@@ -212,35 +395,13 @@ async def loadfile(ctx, *args, **kwargs):
     response = "Presentation loaded"
     await ctx.message.channel.send(response)
 
-def save():
-    state = {}
-    state['presentationLoaded'] = presentationLoaded
-    state['slides'] = slides
-    state['slideNumber'] = slideNumber
-    saveSlideState('slides.pkl', state)
-    print("Saving:")
-    for key in state:
-        print(key, state[key])
-
-def load():
-    state = recoverSlideState('slides.pkl')
-    print("Loading:")
-    for key in state:
-        print(key, state[key])
-    global presentationLoaded
-    global slides
-    global slideNumber
-    presentationLoaded = state['presentationLoaded']
-    slides = state['slides']
-    slideNumber = state['slideNumber']
-
-
 @bot.command(
     name="n",
     aliases=["next",],
     help="Move forward one slide"
     )
 async def nextSlide(ctx, *args, **kwargs):
+    # Authorisation
     global presentationLoaded
     global slideNumber
     global slides
@@ -264,6 +425,7 @@ async def nextSlide(ctx, *args, **kwargs):
 files channel and then run `!loadfile`"
         await ctx.message.channel.send(response)
         return
+    # Check for edge cases, then call the appropriate functions
     if slideNumber == len(slides) - 1:
         response = "The presentation is over. End Quiz?"
         await ctx.message.channel.send(response)
@@ -284,6 +446,7 @@ files channel and then run `!loadfile`"
     help="Move back one slide"
     )
 async def prevSlide(ctx, *args, **kwargs):
+    # Authorisation
     global presentationLoaded
     global slideNumber
     global slides
@@ -307,6 +470,7 @@ async def prevSlide(ctx, *args, **kwargs):
 files channel and then run `!loadfile`"
         await ctx.message.channel.send(response)
         return
+    # Check for edge cases, then call the appropriate functions
     if slideNumber == 0:
         response = "First slide of the presentation, cannot go back further"
         await ctx.message.channel.send(response)
@@ -321,52 +485,9 @@ files channel and then run `!loadfile`"
     save()
 
 
-
-
-@bot.command(
-    name="b",
-    aliases = ["bounce", "B", "bunce", "bonce", "buonce"], 
-    help="Bounce: type `!b your guess` or `!bounce your guess` to \
-send \"your guess\" to the quizmaster and all teams"
-    )
-async def bounce(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    if not quizOn:
-        response = messageQuizNotOn
-        await ctx.message.channel.send(response)
-        return
-    guess = ' '.join([word for word in args])
-    author, authorName = getAuthorAndName(ctx)
-    team = getTeam(author)
-    response = '{}\'s {}: {}'.format(team, authorName, guess)
-    channel = commonChannels[questionChannel]
-    await channel.send(response)
-    response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
-    await broadcastToAllTeams(response)
-
-
-
-@bot.command(
-    name="scores",
-    aliases = ["pointstable"],
-    help="Displays the scores"
-    )
-async def displayScores(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    if not quizOn:
-        response = messageQuizNotOn
-        await ctx.message.channel.send(response)
-        return
-    teamDistribution = getTeamDistribution(bot, guildId, scores)
-    response = '\n\n'.join('{}\t{}\t{}'.format(
-        str(team),
-        str(scores[team]).center(8),
-        ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in scores
-        )
-    await ctx.message.channel.send(response)
-
+############################################################################
+# QM Quiz start, stop, restore (on_ready), role reset, clearAll operations #
+############################################################################
 
 
 @bot.command(
@@ -375,12 +496,15 @@ async def displayScores(ctx, *args, **kwargs):
     help="Stop the quiz and clear channels"
     )
 async def endQuiz(ctx, *args, **kwargs):
+    # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     auth, response = getAuthorized(ctx,'Only ', ' can end this quiz','quizmaster', 'admin')
     if not auth:
         await ctx.send(response)
         return
+    # Unset variables, clear channels, remove score and slide states, make
+    # finalscores, send final result on calling channel
     response = "Warning! This will clear all channels and end the quiz."
     await ctx.send(response)
     global quizOn
@@ -413,22 +537,22 @@ async def endQuiz(ctx, *args, **kwargs):
     help="Reset everything and start a new quiz with an input number of teams"
     )
 async def newQuiz(ctx, *args, **kwargs):
+    # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     auth, response = getAuthorized(ctx,'Only ', ' can end this quiz','quizmaster', 'admin')
     if not auth:
         await ctx.send(response)
         return
-
     response = "Warning! This will clear all channels and reset all scores."
     await ctx.send(response)
-
     if not len(args):
         await ctx.send("This command must be issued along with the number of \
 participating teams (example: `!newQuiz 7` for starting a quiz \
 with 7 teams). Existing member roles will not be affected.")
         return
-    
+    # Read number of teams, clear messages, set flags, reset scores, send
+    # the welcome texts
     numberOfTeams = int(args[-1])
     response = "Creating a quiz with {} teams. \
 \nClearing all channels. This message and everything above might \
@@ -440,6 +564,7 @@ soon disappear.".format(str(numberOfTeams))
     print("Quiz started!")
 
     # make dicts of all team and common channels
+    # This has been done to avoid issues with dictionary.clear()
     global commonChannels
     global teamChannels
     commonChannels = {}
@@ -497,6 +622,10 @@ Join, Viewer Leave")
     
     await ctx.send("All team channels have been cleared, and all scores have \
 been set to 0. You can begin the quiz. \
+\nIf you want to use a PDF for the quiz please upload a file to \
+the #file-upload channel and run `!loadfile`. To show the next\
+slide enter `!n` or `!next`. to show the previous slide (this does not
+delete the last slide sent) enter `!prev`\
 \nIf you want to unassign all team roles, make the bot an admin \
 and issue the command `!resetTeams`. Those who wish to participate \
 have to type `!join` to be automatically assigned a team.")
@@ -508,7 +637,7 @@ have to type `!join` to be automatically assigned a team.")
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
-
+    # In case there was a running quiz, restore everything
     if os.path.exists('scores.txt'):
         with open("scores.txt") as scoresFileObject:
             scoresInFile = json.load(scoresFileObject)
@@ -538,6 +667,7 @@ async def on_ready():
         global quizOn
         quizOn=True
 
+        await commonChannels[qmChannel].send('Bot was restarted, scores restored')
         await broadcastToAllTeams("The bot had to reset for reasons unknown \
 but the scores must have been retained. Below are the scores \
 after the last update. Please alert the quizmaster if \
@@ -552,30 +682,59 @@ there's a discrepancy.")
         print("Please !startQuiz")
 
 
-
 @bot.command(
-    name="p",
-    aliases = ["pounce", "P", "punce", "ponce", "puonce"],
-    help="Pounce: type `!p your guess` or `!pounce your guess` to send \
-\"your guess\" to the quizmaster"
+    name="clearAllChannels",
+    help="delete all messages in all important channel and resets score to 0"
     )
-async def pounce(ctx, *args, **kwargs):
+async def clearAll(ctx, *args, **kwargs):
+    # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
-    if not quizOn:
-        response = messageQuizNotOn
-        await ctx.message.channel.send(response)
+    auth, response = getAuthorized(
+            ctx,
+            "Only ",
+            " can purge all channels and reset scores to 0.",
+            'quizmaster', 'scorer', 'admin'
+            )
+    if not auth:
+        await ctx.send(response)
         return
-    guess = ' '.join([word for word in args])
-    author, authorName = getAuthorAndName(ctx)
-    team = getTeam(author)
-    response = '\'{}\' pounced by {}\'s {}'.format(guess, team, authorName)
-    channel = commonChannels[qmChannel]
-    await channel.send(response)
-    response = "Pounce submitted"
+    # clear messages, scores 
+    await deleteAllMessages(bot, guildId, whitelistChannels)
+    for team in teamChannels:
+        scores[team]=0
+    response = "All channels cleared and scores set to 0"
     await ctx.message.channel.send(response)
 
 
+@bot.command(
+    name="resetRoles",
+    aliases = ["unassignAll", "resetTeams"],
+    help="remove all team roles"
+    )
+async def resetRoles(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    auth, response = getAuthorized(
+            ctx,
+            "Only ",
+            " can assign or unassign teams",
+            'quizmaster', 'scorer', 'admin'
+            )
+    if not auth:
+        await ctx.send(response)
+        return
+    # Clear team roles 
+    await unassignTeams(bot, guildId, ctx)
+    await ctx.send("Removed all team roles. The quizmaster can either manually \
+assign roles or ask participants to `!join` once `!startQuiz` is run")
+    return 
+
+
+###################################
+# QM Scoring options: plus, minus #
+###################################
 
 @bot.command(
     name="s",
@@ -583,6 +742,7 @@ async def pounce(ctx, *args, **kwargs):
     help="for scorers and quizmasters to update scores"
     )
 async def updateScores(ctx, *args, **kwargs):
+    # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     if not quizOn:
@@ -593,12 +753,11 @@ async def updateScores(ctx, *args, **kwargs):
     if len(args)<2:
         await ctx.send("example: `!s -5 t2 t8`  to deduct 5 points from team2 and team8")
         return
-
     auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
     if not auth:
         await ctx.send(response)
         return
-
+    # Get updated scores, save to file, and send updates to teams
     points = int(args[0])
     teams = [team.replace('t','team') for team in args[1:]]
     for team in teams:
@@ -630,22 +789,21 @@ async def updateScores(ctx, *args, **kwargs):
     help="for scorers and quizmasters to update scores"
     )
 async def minus(ctx, *args, **kwargs):
+    # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     if not quizOn:
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
         return
-
     if len(args)<2:
         await ctx.send("example: `!minus 5 t2 t8`  to deduct 5 points from team2 and team8")
         return
-
     auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
     if not auth:
         await ctx.send(response)
         return
-
+    # Get updated scores, save to file, and send updates to teams
     points = int(args[0])
     teams = [team.replace('t','team') for team in args[1:]]
     for team in teams:
@@ -669,132 +827,11 @@ async def minus(ctx, *args, **kwargs):
 
 
 
-@bot.command(
-    name="clearAllChannels",
-    help="delete all messages in all important channel and resets score to 0"
-    )
-async def clearAll(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    auth, response = getAuthorized(
-            ctx,
-            "Only ",
-            " can purge all channels and reset scores to 0.",
-            'quizmaster', 'scorer', 'admin'
-            )
-    if not auth:
-        await ctx.send(response)
-        return
-    
-    await deleteAllMessages(bot, guildId, whitelistChannels)
-
-    for team in teamChannels:
-        scores[team]=0
-
-    return 
 
 
-
-@bot.command(name="clearThis", help="delete all messages in a channel")
-async def clearThis(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    channel = ctx.message.channel
-    offlimitChannels = [
-            commonChannels[qmChannel],
-            commonChannels[questionChannel],
-            commonChannels[scoreChannel]
-            ]
-    auth, response = getAuthorized(
-            ctx,
-            "Only ", 
-            " can clear this channel",
-            'quizmaster', 'scorer', 'admin'
-            )
-    if channel in offlimitChannels and not auth:
-        await ctx.send(response)
-        return
-
-    while(True):
-        deleted = await channel.purge(limit=1000)
-        if not len(deleted):
-            break
-    return 
-
-
-
-@bot.command(
-    name="resetRoles",
-    aliases = ["unassignAll", "resetTeams"],
-    help="remove all team roles"
-    )
-async def resetRoles(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    auth, response = getAuthorized(
-            ctx,
-            "Only ",
-            " can assign or unassign teams",
-            'quizmaster', 'scorer', 'admin'
-            )
-    if not auth:
-        await ctx.send(response)
-        return
-    
-    await unassignTeams(bot, guildId, ctx)
-
-    await ctx.send("Removed all team roles. The quizmaster can either manually \
-assign roles or ask participants to `!join` once `!startQuiz` is run")
-    return 
-
-
-
-@bot.command(
-    name="assignMe",
-    aliases = ["join", "joinTeam"],
-    help="join a team"
-    )
-async def assignRoles(ctx, *args, **kwargs):
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    if not quizOn:
-        response = messageQuizNotOn
-        await ctx.message.channel.send(response)
-        return
-    auth, response = getAuthorized(
-            ctx,
-            'You are already in ',
-            '. Please contact the quizmaster if you need help',
-            *[team for team in teamChannels])
-    if auth:
-        await ctx.send(response)
-        return
-
-    guild =  bot.get_guild(int(guildId))
-    teamSizeCount = {}
-    for role in guild.roles:
-        if role.name in scores:
-            teamSizeCount[role] = 0
-
-    for member in guild.members:
-        for role in member.roles:
-            if role.name.startswith("team") and role in teamSizeCount:
-                teamSizeCount[role] += 1
-
-    author = ctx.message.author
-
-    smallestTeamSize = min(teamSizeCount.values())
-    smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]
-    roleToAssign = random.choice(smallestTeams)
-    print(author.display_name, "assigned to", roleToAssign)
-
-    await author.add_roles(roleToAssign)
-    authorName = str(author.display_name).split("#")[0]
-    response = 'Assigning {} to {}.'.format(authorName,str(roleToAssign)) 
-    await ctx.send(str(response))
-    return 
-
-
+####################
+#  Error Handling  #
+####################
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -803,5 +840,38 @@ async def on_command_error(ctx, error):
     with open('err.log', 'a') as f:
         f.write(f'Unhandled message: {error}\n')
         await ctx.send("The command could not be run. Please type `!help` for the list of available commands")
+
+############################################################
+#  Helper functions that need more context than botutils.  #
+############################################################
+
+@bot.command(name="broadcast", help="")
+async def broadcastToAllTeams(message):
+    # Doesn't actually need to be here, TODO port to botutils
+    for team in teamChannels:
+        await teamChannels[team].send(message)
+
+
+def load():
+    state = recoverSlideState('slides.pkl')
+    print("Loading:")
+    for key in state:
+        print(key, state[key])
+    global presentationLoaded
+    global slides
+    global slideNumber
+    presentationLoaded = state['presentationLoaded']
+    slides = state['slides']
+    slideNumber = state['slideNumber']
+
+def save():
+    state = {}
+    state['presentationLoaded'] = presentationLoaded
+    state['slides'] = slides
+    state['slideNumber'] = slideNumber
+    saveSlideState('slides.pkl', state)
+    print("Saving:")
+    for key in state:
+        print(key, state[key])
 
 bot.run(token)
