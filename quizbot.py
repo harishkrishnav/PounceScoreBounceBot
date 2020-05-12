@@ -624,7 +624,7 @@ Join, Viewer Leave")
 been set to 0. You can begin the quiz. \
 \nIf you want to use a PDF for the quiz please upload a file to \
 the #file-upload channel and run `!loadfile`. To show the next\
-slide enter `!n` or `!next`. to show the previous slide (this does not
+slide enter `!n` or `!next`. to show the previous slide (this does not\
 delete the last slide sent) enter `!prev`\
 \nIf you want to unassign all team roles, make the bot an admin \
 and issue the command `!resetTeams`. Those who wish to participate \
