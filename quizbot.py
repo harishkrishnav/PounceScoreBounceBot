@@ -138,17 +138,15 @@ this script again")
 
 ### Setting up variables to be used for running a Quiz ###
 numberOfTeams = 8
-questionChannel = 'quiz-questions'
-qmChannel = 'qm-panel'
+questionChannel = 'slides-and-media'
+qmChannel = 'qm-control-panel'
 scoreChannel  = 'scores'
 fileChannel = 'file-upload'
 #whitelistChannels = ['general','discord-and-bot-help'] 
 whitelistChannels = [
         'general',                                                              
-        'discord-and-bot-help',                                                 
-        'queries-casualtalk',                                                   
+        'bot-help',                                                 
         'test-channel',                                                         
-        'questions-and-answers'
         ] #these channels are not cleared during reset
 # whitelistChannels are not cleared during reset
 # It is assumed that every team has a name like `teamX-chat`
@@ -158,14 +156,14 @@ teamChannels = {}
 scores = {}
 quizOn = False
 
-presentationDirPath = 'tmp'
+presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
 presentationLoaded = False
 slideNumber = 0
 slides = []
 
 ### Prewriting some common error messages ###
-messageQuizNotOn = "This is the right command to see the scores. However, \
+messageQuizNotOn = "This is the right command. However, \
 the quiz hasn't begun yet. If you are the quizmaster, you must run \
 the `!startQuiz` command."
 
@@ -241,7 +239,7 @@ async def bounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author, authorName = getAuthorAndName(ctx)
     team = getTeam(author)
-    response = '{}\'s {}: {}'.format(team, authorName, guess)
+    response = 'ON BOUNCE {}\'s {}: {}'.format(team, authorName, guess)
     channel = commonChannels[qmChannel]
     await channel.send(response)
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
@@ -334,6 +332,7 @@ async def pounce(ctx, *args, **kwargs):
 
 @bot.command(
     name="loadfile",
+    aliases=["loadFile",],
     help="Load a PDF presentation uploaded to the files channel"
     )
 async def loadfile(ctx, *args, **kwargs):
@@ -345,7 +344,7 @@ async def loadfile(ctx, *args, **kwargs):
             ctx,
             'Only ',
             ' can load the presentation file',
-            'quizmaster'
+            'quizmaster','admin'
             )
     if not auth:
         await ctx.message.channel.send(response)
@@ -592,7 +591,7 @@ soon disappear.".format(str(numberOfTeams))
 
     response = "Guesses on bounce you make by with `!bounce` or \
 `!b` command appear here"
-    await commonChannels[questionChannel].send(response)
+    await commonChannels[qmChannel].send(response)
 
     response = "Welcome! Below are the commands you can use to set scores. \
 Teams are always abbreviated as t1 t2 etc.\
@@ -765,9 +764,7 @@ async def updateScores(ctx, *args, **kwargs):
         scores[team]+=points
 
     sign = lambda x: ('+', '')[x<0]
-    response = '{}{} to {}. Points table now: \
-            \n'.format(sign(points),str(points), ', '.join(team for team in teams)) 
-    response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
+    response = '{}{} to {}. '.format(sign(points),str(points), ', '.join(team for team in teams)) 
     channel = commonChannels[scoreChannel]
     await channel.send(response)
 
@@ -776,8 +773,7 @@ async def updateScores(ctx, *args, **kwargs):
 
     for team in teams:
         channel=teamChannels[team]
-        response = '{}{} to your team. Your score is now \
-                {}'.format(sign(points),str(points), scores[team])
+        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
 
