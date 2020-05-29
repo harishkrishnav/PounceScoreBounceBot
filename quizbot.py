@@ -577,6 +577,10 @@ soon disappear.".format(str(numberOfTeams))
 
     #clear everything
     await deleteAllMessages(bot, guildId, whitelistChannels)
+        
+    global presentationLoaded
+    presentationLoaded = False
+    deleteFiles(presentationDirPath, 'jpg', 'pdf')
 
     #reset scores
     scores.clear()
@@ -899,8 +903,31 @@ async def minus(ctx, *args, **kwargs):
                 {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
 
-
-
+@bot.command(
+    name="resetScores",
+    aliases = ["resetscores","clearscores","clearScores"],
+    help="makes all scores 0"
+    )
+async def resetscores(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
+    if not auth:
+        await ctx.send(response)
+        return
+    #reset scores
+    scores.clear()
+    for team in teamChannels:
+        scores[team] = 0
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
+    response = "Scores reset to 0"
+    await ctx.message.channel.send(response)
 
 
 ####################
