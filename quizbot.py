@@ -38,6 +38,11 @@ scores-channel sees "<points> to <list of teams>. Points table now: <pointstable
 channels of teams with update see "<points> to your team. Your score is now <total points>"
 action only when sender has role quizmaster, scorer
 
+- !resetScores
+example: !resetscores
+all scores set to 0 and file updated
+channel sender sees "scores reset" 
+
 - !minus or !deduct
 example: !minus 5 t2 t4 t6
 5 subtracted from score of team2, team4, team6
