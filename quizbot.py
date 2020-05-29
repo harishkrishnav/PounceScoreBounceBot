@@ -518,7 +518,8 @@ async def endQuiz(ctx, *args, **kwargs):
     quizOn=False
     global presentationLoaded
     presentationLoaded = False
-    deleteFiles(presentationDirPath, 'jpg', 'pdf')
+    if os.path.exists(presentationDirPath):
+        deleteFiles(presentationDirPath, 'jpg', 'pdf')
     #clear everything
     await deleteAllMessages(bot, guildId, whitelistChannels)
     response = "The final scores are below (they're also saved in finalscores.txt)\n"
@@ -558,12 +559,19 @@ async def newQuiz(ctx, *args, **kwargs):
 participating teams (example: `!newQuiz 7` for starting a quiz \
 with 7 teams). Existing member roles will not be affected.")
         return
+
     # Read number of teams, clear messages, set flags, reset scores, send
     # the welcome texts
     numberOfTeams = int(args[-1])
     response = "Creating a quiz with {} teams. \
 \nClearing all channels. This message and everything above might \
 soon disappear.".format(str(numberOfTeams))
+    await ctx.send(response)
+    
+    try:
+        await endQuiz(ctx=ctx)
+    except:
+        response = "Could not find a quiz to end. Starting a new one..."
     await ctx.send(response)
 
     global quizOn
@@ -582,10 +590,6 @@ soon disappear.".format(str(numberOfTeams))
 
     #clear everything
     await deleteAllMessages(bot, guildId, whitelistChannels)
-        
-    global presentationLoaded
-    presentationLoaded = False
-    deleteFiles(presentationDirPath, 'jpg', 'pdf')
 
     #reset scores
     scores.clear()
