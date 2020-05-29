@@ -1,5 +1,7 @@
 # PounceScoreBounceBot for quizzes
 
+[Please switch to the `sendslides` branch](https://github.com/harishkrishnav/PounceScoreBounceBot/tree/sendslides) for the latest updates that include sending images of slides in all team channels and scoring using buttons.
+
 ## What is it?
 
 Discord + this bot eliminates the need for paid p2p subscriptions, time limits, screenshotting, frequent switching between channels, spreadsheets to keep scores, WhatsApp groups specifically for a quiz, and all those frustrations of quizzing online. In this, if a participant tabs the screenshare window, they can go through the entire quiz without needing a mouse or switching out of the channel. 
