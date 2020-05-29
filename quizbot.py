@@ -157,7 +157,11 @@ teamChannels = {}
 scores = {}
 quizOn = False
 
-os.mkdir("slide_images")
+sco_command_messages = []
+
+if not os.path.exists('slide_images'):
+    os.mkdir("slide_images")
+
 presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
 presentationLoaded = False
@@ -799,6 +803,10 @@ async def scoreGUI(ctx, *args, **kwargs):
         return
     # Get updated scores, save to file, and send updates to teams
     
+    global sco_command_messages
+    for msg in sco_command_messages:
+        await msg.delete()
+
     arr_of_messages = []
     arr_of_msg_ids = []
     for team in scores:
@@ -811,6 +819,7 @@ async def scoreGUI(ctx, *args, **kwargs):
         arr_of_msg_ids.append(mesg.id)
 
 
+    sco_command_messages = arr_of_messages
     wait_time = 1
 
     def check(reaction, user):
