@@ -148,7 +148,7 @@ whitelistChannels = [
         'general',                                                              
         'bot-help',                                                 
         'test-channel',                                                         
-        ] #these channels are not cleared during reset
+        ] #these channels are not cleared during reset, do not include slides-and-media here
 # whitelistChannels are not cleared during reset
 # It is assumed that every team has a name like `teamX-chat`
 
@@ -158,9 +158,6 @@ scores = {}
 quizOn = False
 
 sco_command_messages = []
-
-if not os.path.exists('slide_images'):
-    os.mkdir("slide_images")
 
 presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
@@ -743,7 +740,7 @@ assign roles or ask participants to `!join` once `!startQuiz` is run")
 
 @bot.command(
     name="s",
-    aliases = ["plus"],
+    aliases = ["plus","sco","sc","score"],
     help="for scorers and quizmasters to update scores"
     )
 async def updateScores(ctx, *args, **kwargs):
@@ -755,135 +752,108 @@ async def updateScores(ctx, *args, **kwargs):
         await ctx.message.channel.send(response)
         return
 
-    if len(args)<2:
-        await ctx.send("example: `!s -5 t2 t8`  to deduct 5 points from team2 and team8")
-        return
-    auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
-    if not auth:
-        await ctx.send(response)
-        return
-    # Get updated scores, save to file, and send updates to teams
-    points = int(args[0])
-    teams = [team.replace('t','team') for team in args[1:]]
-    for team in teams:
-        print("Updating score for ", team)
-        scores[team]+=points
+    if len(args) <2:
+        if len(args) == 1:
+            positive_points, negative_points = abs(int(args[0])), -1*abs(int(args[0]))
+        else:
+             positive_points, negative_points = 10, -5
 
-    sign = lambda x: ('+', '')[x<0]
-    response = '{}{} to {}. '.format(sign(points),str(points), ', '.join(team for team in teams)) 
-    channel = commonChannels[scoreChannel]
-    await channel.send(response)
-
-    with open("scores.txt","w") as scoresFileObject:
-        json.dump(scores, scoresFileObject)
-
-    for team in teams:
-        channel=teamChannels[team]
-        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
-        await channel.send(response)
-
-
-@bot.command(
-    name="sco",
-    aliases = [],
-    help="for scorers and quizmasters to update scores"
-    )
-async def scoreGUI(ctx, *args, **kwargs):
-    # Authorisation
-    if not getAuthorizedServer(bot, guildId, ctx):
-        return 
-    if not quizOn:
-        response = messageQuizNotOn 
-        await ctx.message.channel.send(response)
-        return
-
-    auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
-    if not auth:
-        await ctx.send(response)
-        return
-    # Get updated scores, save to file, and send updates to teams
-    
-    global sco_command_messages
-    for msg in sco_command_messages:
-        await msg.delete()
-
-    teamDistribution = getTeamDistribution(bot, guildId, scores)
-    arr_of_messages = []
-    arr_of_msg_ids = []
-    for team in scores:
-        # Get team members, scores, generate a response and send
-        response = '{}\t{}\t{}'.format(
-            str(team),
-            str(scores[team]).center(8),
-            ', '.join(getTeamMembers(teamDistribution, team)).center(60))
-
-        mesg = await ctx.message.channel.send(response)
-        await mesg.add_reaction('\U00002795')
-        await mesg.add_reaction('\U00002796')
-        arr_of_messages.append(mesg)
-        arr_of_msg_ids.append(mesg.id)
-
-
-    sco_command_messages = arr_of_messages
-    wait_time = 1
-
-    def check(reaction, user):
-        auth, response = getAuthorizedUser(user, "Only ", " can update scores", 'quizmaster', 'scorer')
-        return (auth and bot.user != user and
-                reaction.message.id in arr_of_msg_ids and
-                reaction.emoji in ['\U00002795', '\U00002796'])
-
-    while True:
-        try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=wait_time, check=check)
-            await reaction.remove(user)
-            
-            # print("here")
-
-            ind = arr_of_msg_ids.index(reaction.message.id)
-            team = "team"+str(ind+1)
-
-            points = 0
-            # If plus add 10 to teams score
-            if reaction.emoji == '\U00002795':
-                points = 10
-            # If minus remove 5 from teams score
-            if reaction.emoji == '\U00002796':
-                points = -5
-        
-            scores[team] += points
-            sign = lambda x: ('+', '')[x<0]
-            response = '{}{} to {}. '.format(sign(points),str(points), team) 
-            channel = commonChannels[scoreChannel]
-
-
+        teamDistribution = getTeamDistribution(bot, guildId, scores)
+        arr_of_messages = []
+        arr_of_msg_ids = []
+        for team in scores:
+            # Get team members, scores, generate a response and send
             response = '{}\t{}\t{}'.format(
                 str(team),
                 str(scores[team]).center(8),
                 ', '.join(getTeamMembers(teamDistribution, team)).center(60))
-            
-            await arr_of_messages[ind].edit(content= response)
-            response = '{}{} to {}. '.format(sign(points),str(points), team) 
-            await channel.send(response)
-            await ctx.send(response)
 
-            with open("scores.txt","w") as scoresFileObject:
-                json.dump(scores, scoresFileObject)
-    
+            mesg = await ctx.message.channel.send(response)
+            await mesg.add_reaction('\U00002795')
+            await mesg.add_reaction('\U00002796')
+            arr_of_messages.append(mesg)
+            arr_of_msg_ids.append(mesg.id)
+
+        global sco_command_messages
+        for msg in sco_command_messages:
+            await msg.delete()
+
+        sco_command_messages = arr_of_messages
+        wait_time = 1
+
+        def check(reaction, user):
+            auth, _ = getAuthorizedUser(user, "Only ", " can update scores", 'quizmaster', 'scorer')
+            return (auth and bot.user != user and
+                    reaction.message.id in arr_of_msg_ids and
+                    reaction.emoji in ['\U00002795', '\U00002796'])
+
+        while True:
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=wait_time, check=check)
+                await reaction.remove(user)
+                
+                ind = arr_of_msg_ids.index(reaction.message.id)
+                team = "team"+str(ind+1)
+
+                points = 0
+                # If plus add 10 to teams score
+                if reaction.emoji == '\U00002795':
+                    points = positive_points
+                # If minus remove 5 from teams score
+                if reaction.emoji == '\U00002796':
+                    points = negative_points
+            
+                scores[team] += points
+                sign = lambda x: ('+', '')[x<0]
+                response = '{}{} to {}. '.format(sign(points),str(points), team) 
+                channel = commonChannels[scoreChannel]
+
+                response = '{}\t{}\t{}'.format(
+                    str(team),
+                    str(scores[team]).center(8),
+                    ', '.join(getTeamMembers(teamDistribution, team)).center(60))
+                
+                await arr_of_messages[ind].edit(content= response)
+                response = '{}{} to {}. '.format(sign(points),str(points), team) 
+                await channel.send("Logged "+response)
+                await ctx.send(response)
+
+                with open("scores.txt","w") as scoresFileObject:
+                    json.dump(scores, scoresFileObject)
+        
+                channel=teamChannels[team]
+                response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+                await channel.send(response)
+
+            except asyncio.TimeoutError:
+                # await self.message.clear_reactions()
+                # break
+                pass
+
+    if len(args)>=2:
+        auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
+        if not auth:
+            await ctx.send(response)
+            return
+        # Get updated scores, save to file, and send updates to teams
+        points = int(args[0])
+        teams = [team.replace('t','team') for team in args[1:]]
+        for team in teams:
+            print("Updating score for ", team)
+            scores[team]+=points
+
+        sign = lambda x: ('+', '')[x<0]
+        response = '{}{} to {}. '.format(sign(points),str(points), ', '.join(team for team in teams)) 
+        channel = commonChannels[scoreChannel]
+        await channel.send(response)
+
+        with open("scores.txt","w") as scoresFileObject:
+            json.dump(scores, scoresFileObject)
+
+        for team in teams:
             channel=teamChannels[team]
             response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
             await channel.send(response)
-
-
-
-        except asyncio.TimeoutError:
-            # await self.message.clear_reactions()
-            # break
-            pass
-
-
-
-
 
 
 #TODO handle !minus better
