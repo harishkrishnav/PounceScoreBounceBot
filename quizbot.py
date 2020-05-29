@@ -85,6 +85,7 @@ if member does not have a role beginning with "team", assigned a random team fro
 import random
 import os
 import json
+import asyncio
 
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
@@ -156,6 +157,7 @@ teamChannels = {}
 scores = {}
 quizOn = False
 
+os.mkdir("slide_images")
 presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
 presentationLoaded = False
@@ -745,7 +747,7 @@ async def updateScores(ctx, *args, **kwargs):
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     if not quizOn:
-        response = messageQuizNotOn
+        response = messageQuizNotOn 
         await ctx.message.channel.send(response)
         return
 
@@ -775,6 +777,90 @@ async def updateScores(ctx, *args, **kwargs):
         channel=teamChannels[team]
         response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
+
+
+@bot.command(
+    name="sco",
+    aliases = [],
+    help="for scorers and quizmasters to update scores"
+    )
+async def scoreGUI(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn 
+        await ctx.message.channel.send(response)
+        return
+
+    auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
+    if not auth:
+        await ctx.send(response)
+        return
+    # Get updated scores, save to file, and send updates to teams
+    
+    arr_of_messages = []
+    arr_of_msg_ids = []
+    for team in scores:
+        # Get team members, scores, generate a response and send
+        response = '{}: {}'.format(str(team), scores[team]).center(8)
+        mesg = await ctx.message.channel.send(response)
+        await mesg.add_reaction('\U00002795')
+        await mesg.add_reaction('\U00002796')
+        arr_of_messages.append(mesg)
+        arr_of_msg_ids.append(mesg.id)
+
+
+    wait_time = 1
+
+    def check(reaction, user):
+        return (bot.user != user and
+                reaction.message.id in arr_of_msg_ids and
+                reaction.emoji in ['\U00002795', '\U00002796'])
+
+    while True:
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=wait_time, check=check)
+            await reaction.remove(user)
+            
+            # print("here")
+
+            ind = arr_of_msg_ids.index(reaction.message.id)
+            team = "team"+str(ind+1)
+
+            points = 0
+            # If plus add 10 to teams score
+            if reaction.emoji == '\U00002795':
+                points = 10
+            # If minus remove 5 from teams score
+            if reaction.emoji == '\U00002796':
+                points = -5
+        
+            scores[team] += points
+            sign = lambda x: ('+', '')[x<0]
+            response = '{}{} to {}. '.format(sign(points),str(points), team) 
+            channel = commonChannels[scoreChannel]
+
+            await arr_of_messages[ind].edit(content='{}: {}'.format(str(team), scores[team]).center(8))
+            await channel.send(response)
+            await ctx.send(response)
+
+            with open("scores.txt","w") as scoresFileObject:
+                json.dump(scores, scoresFileObject)
+    
+            channel=teamChannels[team]
+            response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+            await channel.send(response)
+
+
+
+        except asyncio.TimeoutError:
+            # await self.message.clear_reactions()
+            # break
+            pass
+
+
+
 
 
 
