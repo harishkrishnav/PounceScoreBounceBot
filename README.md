@@ -1,6 +1,6 @@
 # PounceScoreBounceBot for quizzes
 
-## Update: now can send slides
+## Update: now can send slides and scoring can be done through buttons
 
 #### Setting up the environment
 If you are already using the bot and have an existing server, follow the following instructions
