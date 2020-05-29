@@ -90,7 +90,7 @@ import asyncio
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
         getTeamChannels, unassignTeams, deleteFiles, convertToImages,
-        updateSlides, saveSlideState, recoverSlideState, getAuthorizedServer)
+        updateSlides, saveSlideState, recoverSlideState, getAuthorizedServer, getAuthorizedUser)
 
 from discord.ext import commands
 import discord
@@ -807,11 +807,16 @@ async def scoreGUI(ctx, *args, **kwargs):
     for msg in sco_command_messages:
         await msg.delete()
 
+    teamDistribution = getTeamDistribution(bot, guildId, scores)
     arr_of_messages = []
     arr_of_msg_ids = []
     for team in scores:
         # Get team members, scores, generate a response and send
-        response = '{}: {}'.format(str(team), scores[team]).center(8)
+        response = '{}\t{}\t{}'.format(
+            str(team),
+            str(scores[team]).center(8),
+            ', '.join(getTeamMembers(teamDistribution, team)).center(60))
+
         mesg = await ctx.message.channel.send(response)
         await mesg.add_reaction('\U00002795')
         await mesg.add_reaction('\U00002796')
@@ -823,7 +828,8 @@ async def scoreGUI(ctx, *args, **kwargs):
     wait_time = 1
 
     def check(reaction, user):
-        return (bot.user != user and
+        auth, response = getAuthorizedUser(user, "Only ", " can update scores", 'quizmaster', 'scorer')
+        return (auth and bot.user != user and
                 reaction.message.id in arr_of_msg_ids and
                 reaction.emoji in ['\U00002795', '\U00002796'])
 
@@ -850,7 +856,14 @@ async def scoreGUI(ctx, *args, **kwargs):
             response = '{}{} to {}. '.format(sign(points),str(points), team) 
             channel = commonChannels[scoreChannel]
 
-            await arr_of_messages[ind].edit(content='{}: {}'.format(str(team), scores[team]).center(8))
+
+            response = '{}\t{}\t{}'.format(
+                str(team),
+                str(scores[team]).center(8),
+                ', '.join(getTeamMembers(teamDistribution, team)).center(60))
+            
+            await arr_of_messages[ind].edit(content= response)
+            response = '{}{} to {}. '.format(sign(points),str(points), team) 
             await channel.send(response)
             await ctx.send(response)
 

@@ -30,6 +30,20 @@ def getAuthorized(ctx,  message_start, message_end, *authorizedRoles):
     response = message_start+', or '.join(authorizedRoles)+message_end
     return False, response
 
+
+def getAuthorizedUser(author,  message_start, message_end, *authorizedRoles):
+    """
+    @param ctx 
+    """
+    authorRoles = [str(role).lower() for role in author.roles[1:]]
+    for role in authorizedRoles:
+        if role in authorRoles:
+            return True, ''
+    response = message_start+', or '.join(authorizedRoles)+message_end
+    return False, response
+
+
+
 def getAuthorizedServer(bot, guildId, ctx):
     guild = bot.get_guild(int(guildId))
     if ctx.message.guild != guild:
