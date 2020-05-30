@@ -243,7 +243,32 @@ async def assignRoles(ctx, *args, **kwargs):
     authorName = str(author.display_name).split("#")[0]
     response = 'Assigning {} to {}.'.format(authorName,str(roleToAssign)) 
     await ctx.send(str(response))
-    return 
+    return
+
+@bot.command(
+    name="unjoin",
+    aliases = ["leaveTeam"],
+    help="`eg: !unjoin <some explanation for why you are leaving the team>`"
+    )
+async def unjoin(ctx, *args, **kwargs):
+    if not len(args):
+        response = "Please type a reason after `!unjoin ` for why you are leaving the team" 
+        await ctx.send(str(response))
+        return
+    elif len(' '.join([word for word in args]))<8:
+        response = "You'll need to type a slightly longer message (of at least 8 characters) before you leave this team" 
+        await ctx.send(str(response))
+        return
+    author, authorName = getAuthorAndName(ctx)
+    authorRoles = getTeam(author).split(',')
+    guild =  bot.get_guild(int(guildId))
+    for role in guild.roles:
+        if role.name in scores and role.name in authorRoles:
+            await author.remove_roles(role)
+            response = 'Removing {} from {}.'.format(authorName,role.name) 
+            await ctx.send(str(response))
+    return
+
 
 
 @bot.command(
