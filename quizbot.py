@@ -192,35 +192,52 @@ async def assignRoles(ctx, *args, **kwargs):
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
         return
+    author, authorName = getAuthorAndName(ctx)
     auth, response = getAuthorized(
             ctx,
-            'You are already in ',
+            authorName+' is already in ',
             '. Please contact the quizmaster if you need help',
             *[team for team in teamChannels])
+    print(response)
     if auth:
-        await ctx.send(response)
+        if len(response):
+            await ctx.message.channel.send(response)
+        else:
+            response="You are already in {}. Please contact the quizmaster if you need help.".format(getTeam(author))
+            await ctx.message.channel.send(response)
         return
     
-    # Initialising team sizes to 0 and counting them
-    guild =  bot.get_guild(int(guildId))
-    teamSizeCount = {}
-    for role in guild.roles:
-        if role.name in scores:
-            teamSizeCount[role] = 0
+    if len(args):
+        rolename = 'team'+str(args[0])
+        if rolename not in scores:
+            response = "Such a team does not exist"
+            await ctx.message.channel.send(response)
+            return
+        guild =  bot.get_guild(int(guildId))
+        for role in guild.roles:
+            if role.name == rolename:
+                roleToAssign = role
+                break
+    else:
+        # Initialising team sizes to 0 and counting them
+        guild =  bot.get_guild(int(guildId))
+        teamSizeCount = {}
+        for role in guild.roles:
+            if role.name in scores:
+                teamSizeCount[role] = 0
 
-    for member in guild.members:
-        for role in member.roles:
-            if role.name.startswith("team") and role in teamSizeCount:
-                teamSizeCount[role] += 1
+        for member in guild.members:
+            for role in member.roles:
+                if role.name.startswith("team") and role in teamSizeCount:
+                    teamSizeCount[role] += 1
+
+        # Picking a random team from the smallest ones to assign author to
+        smallestTeamSize = min(teamSizeCount.values())
+        smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]
+        roleToAssign = random.choice(smallestTeams)
 
     author = ctx.message.author
-
-    # Picking a random team from the smallest ones to assign author to
-    smallestTeamSize = min(teamSizeCount.values())
-    smallestTeams = [role for role, size in teamSizeCount.items() if size==smallestTeamSize]
-    roleToAssign = random.choice(smallestTeams)
     print(author.display_name, "assigned to", roleToAssign)
-
     # Assign the author to selected team
     await author.add_roles(roleToAssign)
     authorName = str(author.display_name).split("#")[0]
