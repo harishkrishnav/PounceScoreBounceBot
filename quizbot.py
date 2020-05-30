@@ -180,9 +180,9 @@ the `!startQuiz` command."
 ############################################################################
 
 @bot.command(
-    name="assignMe",
-    aliases = ["join", "joinTeam"],
-    help="join a team"
+    name="join",
+    aliases = ["assignMe", "joinTeam"],
+    help="`!join 3` to join team3. Just `!join` for a random team"
     )
 async def assignRoles(ctx, *args, **kwargs):
     # Authorisation
