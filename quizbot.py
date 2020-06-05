@@ -262,7 +262,7 @@ async def unjoin(ctx, *args, **kwargs):
     author, authorName = getAuthorAndName(ctx)
     authorRoles = getTeam(author).split(',')
     guild =  bot.get_guild(int(guildId))
-    for role in guild.roles:
+    for role in guild.roles: 
         if role.name in scores and role.name in authorRoles:
             await author.remove_roles(role)
             response = 'Removing {} from {}.'.format(authorName,role.name) 
@@ -610,6 +610,55 @@ with 7 teams). Existing member roles will not be affected.")
 soon disappear.".format(str(numberOfTeams))
     await ctx.send(response)
     
+    
+    #Create roles, text channels, voice channels
+    guild = bot.get_guild(int(guildId))
+
+    existingRoles = [role.name for role in guild.roles]
+    permissions = discord.Permissions(read_messages=True, add_reactions=True, send_messages=True, 
+        connect=True, speak=True, change_nickname=True, use_voice_activation=True, read_message_history=True)
+    for i in range(1,numberOfTeams+1):
+        if 'team'+str(i) not in existingRoles:
+            await guild.create_role(name = 'team'+str(i), mentionable=True, hoist=True, permissions=permissions)
+            print("creating role", str(i))
+
+    #categories = guild.categories
+    #for category in categories:
+    #    if category.name == 'Team Private Text Channel':
+    #        teamTextChannelCategory = category
+    existingVoiceChannels = [channel.name for channel in guild.voice_channels]
+    for i in range(1,numberOfTeams+1):
+        if 'team'+str(i)+'-voice' not in existingVoiceChannels:
+            teamRole = [role for role in guild.roles if role.name == 'team'+str(i)][0]
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False),
+                teamRole: discord.PermissionOverwrite(view_channel=True, connect=True, speak=True, mute_members=True, use_voice_activation=True) }
+            await guild.create_voice_channel(name = 'team'+str(i)+'-voice', overwrites = overwrites)
+            print("creating voice channel for team", str(i))
+    
+    existingTextChannels = [channel.name for channel in guild.text_channels]
+    for i in range(1,numberOfTeams+1):
+        if 'team'+str(i)+'-chat' not in existingTextChannels:
+            teamRole = [role for role in guild.roles if role.name == 'team'+str(i)][0]
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                teamRole: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True) }
+            await guild.create_text_channel(name = 'team'+str(i)+'-chat', overwrites = overwrites)
+            print("creating text channel for team", str(i))
+    
+    surlusTextChannels = ['team'+str(i) +'-chat' for i in range(numberOfTeams+1, len(existingTextChannels))]
+    surlusVoiceChannels = ['team'+str(i)+'-voice' for i in range(numberOfTeams+1, len(existingTextChannels))]
+    
+    textChannels, voiceChannels = guild.text_channels, guild.voice_channels
+    for channel in textChannels:
+        if channel.name in surlusTextChannels:
+            await channel.delete()
+            print("Deleting", channel.name)
+    for channel in voiceChannels:
+        if channel.name in surlusVoiceChannels:
+            await channel.delete()
+            print("Deleting", channel.name)
+
     try:
         await endQuiz(ctx=ctx)
     except:
