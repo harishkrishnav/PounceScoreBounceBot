@@ -164,6 +164,8 @@ quizOn = False
 
 sco_command_messages = []
 
+pounce_messages = {}
+
 presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
 presentationLoaded = False
@@ -371,9 +373,54 @@ async def pounce(ctx, *args, **kwargs):
     team = getTeam(author)
     response = 'Guess on pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
     channel = commonChannels[qmChannel]
-    await channel.send(response)
+    pounceMessage = await channel.send(response)
     response = "Pounce submitted"
     await ctx.message.channel.send(response)
+    await pounceMessage.add_reaction('\U00002705')
+    await pounceMessage.add_reaction('\U000026D4')
+    await pounceMessage.add_reaction('5\N{variation selector-16}\N{combining enclosing keycap}')
+    await pounceMessage.add_reaction('\U0001F986')
+    global pounce_messages
+    team = team.split(',')[0]
+    pounce_messages[pounceMessage.id] = team
+
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user == bot.user or reaction.emoji not in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986' ]:
+        return
+    message = reaction.message 
+    if message.id not in pounce_messages:
+        return
+    team = pounce_messages[message.id]
+    print("Here", reaction.emoji, reaction.count, team)
+    await message.add_reaction('\U0001F441')
+    
+    if reaction.emoji == '\U00002705':
+        points = 10
+    elif reaction.emoji == '\U000026D4':
+        points = -5
+    elif reaction.emoji == '5\N{variation selector-16}\N{combining enclosing keycap}':
+        points = 5
+    elif reaction.emoji == '\U0001F986':
+        points = 0
+    
+    scores[team] += points
+    sign = lambda x: ('+', '')[x<0]
+    response = '{}{} to {}. '.format(sign(points),str(points), team) 
+    channel = commonChannels[scoreChannel]
+
+    response = '{}{} to {}. '.format(sign(points),str(points), team) 
+    await channel.send("Logged "+response)
+
+    await message.channel.send(response)
+
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
+
+    channel=teamChannels[team]
+    response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+    await channel.send(response)
 
 
 #############################################
@@ -1061,15 +1108,18 @@ def load():
     global presentationLoaded
     global slides
     global slideNumber
+    global pounce_messages
     presentationLoaded = state['presentationLoaded']
     slides = state['slides']
     slideNumber = state['slideNumber']
+    pounce_messages = state['pounceMessages']
 
 def save():
     state = {}
     state['presentationLoaded'] = presentationLoaded
     state['slides'] = slides
     state['slideNumber'] = slideNumber
+    state['pounceMessages'] = pounce_messages
     saveSlideState('slides.pkl', state)
     print("Saving:")
     for key in state:
