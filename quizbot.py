@@ -145,7 +145,8 @@ this script again")
 ### Setting up variables to be used for running a Quiz ###
 numberOfTeams = 8
 questionChannel = 'slides-and-media'
-qmChannel = 'qm-control-panel'
+qmChannel = 'qm-control-panel-1'
+qmChannel2, qmChannel3 = 'qm-control-panel-2' , 'qm-control-panel-3'
 scoreChannel  = 'scores'
 fileChannel = 'file-upload'
 #whitelistChannels = ['general','discord-and-bot-help'] 
@@ -184,7 +185,7 @@ the `!startQuiz` command."
 @bot.command(
     name="join",
     aliases = ["assignMe", "joinTeam"],
-    help="`!join 3` to join team3. Just `!join` for a random team"
+    help=" `!join` for a random team"
     )
 async def assignRoles(ctx, *args, **kwargs):
     # Authorisation
@@ -210,16 +211,10 @@ async def assignRoles(ctx, *args, **kwargs):
         return
     
     if len(args):
-        rolename = 'team'+str(args[0])
-        if rolename not in scores:
-            response = "Such a team does not exist"
-            await ctx.message.channel.send(response)
-            return
-        guild =  bot.get_guild(int(guildId))
-        for role in guild.roles:
-            if role.name == rolename:
-                roleToAssign = role
-                break
+        response = "Sorry, this is disabled. Please type `!join`"
+        await ctx.message.channel.send(response)
+        return
+
     else:
         # Initialising team sizes to 0 and counting them
         guild =  bot.get_guild(int(guildId))
@@ -253,22 +248,8 @@ async def assignRoles(ctx, *args, **kwargs):
     help="`eg: !unjoin <some explanation for why you are leaving the team>`"
     )
 async def unjoin(ctx, *args, **kwargs):
-    if not len(args):
-        response = "Please type a reason after `!unjoin ` for why you are leaving the team" 
-        await ctx.send(str(response))
-        return
-    elif len(' '.join([word for word in args]))<8:
-        response = "You'll need to type a slightly longer message (of at least 8 characters) before you leave this team" 
-        await ctx.send(str(response))
-        return
-    author, authorName = getAuthorAndName(ctx)
-    authorRoles = getTeam(author).split(',')
-    guild =  bot.get_guild(int(guildId))
-    for role in guild.roles: 
-        if role.name in scores and role.name in authorRoles:
-            await author.remove_roles(role)
-            response = 'Removing {} from {}.'.format(authorName,role.name) 
-            await ctx.send(str(response))
+    response = "Sorry, this is disabled for this quiz" 
+    await ctx.send(str(response))
     return
 
 
@@ -276,8 +257,7 @@ async def unjoin(ctx, *args, **kwargs):
 @bot.command(
     name="b",
     aliases = ["bounce", "B", "bunce", "bonce", "buonce"], 
-    help="Bounce: type `!b your guess` or `!bounce your guess` to \
-send \"your guess\" to the quizmaster and all teams"
+    help="For official announcements"
     )
 async def bounce(ctx, *args, **kwargs):
     # Authorisation
@@ -287,14 +267,25 @@ async def bounce(ctx, *args, **kwargs):
         response = messageQuizNotOn
         await ctx.message.channel.send(response)
         return
+    auth, response = getAuthorized(
+            ctx,
+            "Only ", 
+            " can broadcast",
+            'quizmaster', 'scorer', 'admin'
+            )
+    if not auth:
+        await ctx.send(response)
+        return
     # Read the guess and send to all channels
     guess = ' '.join([word for word in args])
-    author, authorName = getAuthorAndName(ctx)
-    team = getTeam(author)
-    response = 'ON BOUNCE {}\'s {}: {}'.format(team, authorName, guess)
+    response = 'OFFICIAL ANNOUNCEMENT: {}'.format(guess)
     channel = commonChannels[qmChannel]
     await channel.send(response)
-    response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
+    channel = commonChannels[qmChannel2]
+    await channel.send(response)
+    channel = commonChannels[qmChannel3]
+    await channel.send(response)
+    response = 'OFFICIAL ANNOUNCEMENT: {}'.format(str(guess))
     await broadcastToAllTeams(response)
 
 
@@ -332,7 +323,7 @@ async def clearThis(ctx, *args, **kwargs):
 @bot.command(
     name="scores",
     aliases = ["pointstable"],
-    help="Displays the scores"
+    help="Displays the scores sorted. `!scores unsorted` for scores unsorted"
     )
 async def displayScores(ctx, *args, **kwargs):
     # Authorisation
@@ -344,13 +335,17 @@ async def displayScores(ctx, *args, **kwargs):
         return
     # Get team members, scores, generate a response and send
     teamDistribution = getTeamDistribution(bot, guildId, scores)
-    response = '\n\n'.join('{}\t{}\t{}'.format(
-        str(team),
-        str(scores[team]).center(8),
-        ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in scores
-        )
-    await ctx.message.channel.send(response)
-
+    sorted_scores = {k: int(v) for k, v in sorted(scores.items(), key=lambda item: item[1], reverse=True)}
+    if len(args)>0:
+        sorted_scores = scores
+    spliced_scores = [ list(sorted_scores.keys())[i:i + 6] for i in range(0, len(sorted_scores.keys()), 6) ]    
+    for set_of_teams in spliced_scores:
+            response = '\n'.join('{}\t{}\t{}'.format(
+                str(team),
+                str(scores[team]).center(8),
+                ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in set_of_teams
+                )+'\n'
+            await ctx.message.channel.send(response)
 
 
 @bot.command(
@@ -371,8 +366,17 @@ async def pounce(ctx, *args, **kwargs):
     guess = ' '.join([word for word in args])
     author, authorName = getAuthorAndName(ctx)
     team = getTeam(author)
-    response = 'Guess on pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
-    channel = commonChannels[qmChannel]
+    team = team.split(',')[0]
+    teamnumber = int(team[4:])
+    global numberOfTeams
+    if teamnumber < numberOfTeams/3:
+        channelToSend = qmChannel
+    elif teamnumber < 2* numberOfTeams/3:
+        channelToSend = qmChannel2
+    else:
+        channelToSend = qmChannel3
+    response = 'pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
+    channel = commonChannels[channelToSend]
     pounceMessage = await channel.send(response)
     response = "Pounce submitted"
     await ctx.message.channel.send(response)
@@ -381,30 +385,36 @@ async def pounce(ctx, *args, **kwargs):
     await pounceMessage.add_reaction('5\N{variation selector-16}\N{combining enclosing keycap}')
     await pounceMessage.add_reaction('\U0001F986')
     global pounce_messages
-    team = team.split(',')[0]
     pounce_messages[pounceMessage.id] = team
+    state = {}
+    state['pounceMessages'] = pounce_messages
+    saveSlideState('pounces.pkl', state)
 
 
 @bot.event
-async def on_reaction_add(reaction, user):
-    if user == bot.user or reaction.emoji not in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986' ]:
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id or payload.emoji.name not in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986' ]:
         return
-    message = reaction.message 
-    if message.id not in pounce_messages:
+    message_id = payload.message_id
+    if message_id not in pounce_messages:
         return
-    team = pounce_messages[message.id]
-    print("Here", reaction.emoji, reaction.count, team)
-    await message.add_reaction('\U0001F441')
+    team = pounce_messages[message_id]
+    pounceChannel = await bot.fetch_channel(payload.channel_id)
+    #print(pounceChannel.name)
+    pounceMessage = await pounceChannel.fetch_message(payload.message_id)
+    #print(pounceMessage.author)
+    #print("Here", reaction.emoji, reaction.count, team)
+    await pounceMessage.add_reaction('\U0001F441')
     
-    if reaction.emoji == '\U00002705':
+    if payload.emoji.name == '\U00002705':
         points = 10
-    elif reaction.emoji == '\U000026D4':
+    elif payload.emoji.name == '\U000026D4':
         points = -5
-    elif reaction.emoji == '5\N{variation selector-16}\N{combining enclosing keycap}':
+    elif payload.emoji.name == '5\N{variation selector-16}\N{combining enclosing keycap}':
         points = 5
-    elif reaction.emoji == '\U0001F986':
+    elif payload.emoji.name == '\U0001F986':
         points = 0
-    
+    #print(points)
     scores[team] += points
     sign = lambda x: ('+', '')[x<0]
     response = '{}{} to {}. '.format(sign(points),str(points), team) 
@@ -413,13 +423,16 @@ async def on_reaction_add(reaction, user):
     response = '{}{} to {}. '.format(sign(points),str(points), team) 
     await channel.send("Logged "+response)
 
-    await message.channel.send(response)
+    await pounceChannel.send(response)
 
     with open("scores.txt","w") as scoresFileObject:
         json.dump(scores, scoresFileObject)
 
     channel=teamChannels[team]
-    response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+    if points != 0:
+        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+    else:
+        response = 'You did not gain or lose points for that pounce. Your score remains {}'.format(scores[team])
     await channel.send(response)
 
 
@@ -624,6 +637,8 @@ async def endQuiz(ctx, *args, **kwargs):
         os.remove("scores.txt")
     if os.path.exists("slides.pkl"):
         os.remove("slides.pkl")
+    if os.path.exists("pounces.pkl"):
+        os.remove("pounces.pkl")
     print("Quiz ended")
 
 
@@ -651,10 +666,11 @@ with 7 teams). Existing member roles will not be affected.")
 
     # Read number of teams, clear messages, set flags, reset scores, send
     # the welcome texts
+    global numberOfTeams
     numberOfTeams = int(args[-1])
     response = "Creating a quiz with {} teams. \
 \nClearing all channels. This message and everything above might \
-soon disappear.".format(str(numberOfTeams))
+soon disappear. Please wait for the image of a coconut being broken before starting.".format(str(numberOfTeams))
     await ctx.send(response)
     
     
@@ -669,28 +685,38 @@ soon disappear.".format(str(numberOfTeams))
             await guild.create_role(name = 'team'+str(i), mentionable=True, hoist=True, permissions=permissions)
             print("creating role", str(i))
 
-    #categories = guild.categories
+    #categories = [category.name for category in guild.categories]
+    #print(categories)
     #for category in categories:
     #    if category.name == 'Team Private Text Channel':
     #        teamTextChannelCategory = category
     existingVoiceChannels = [channel.name for channel in guild.voice_channels]
     for i in range(1,numberOfTeams+1):
         if 'team'+str(i)+'-voice' not in existingVoiceChannels:
+            if 'Voice teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10) not in [category.name for category in guild.categories]:
+                category = await guild.create_category('Voice teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10))
+            else:
+                category = [category for category in guild.categories if category.name == 'Voice teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10)][0]
             teamRole = [role for role in guild.roles if role.name == 'team'+str(i)][0]
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False),
                 teamRole: discord.PermissionOverwrite(view_channel=True, connect=True, speak=True, mute_members=True, use_voice_activation=True) }
-            await guild.create_voice_channel(name = 'team'+str(i)+'-voice', overwrites = overwrites)
+            await guild.create_voice_channel(name = 'team'+str(i)+'-voice', overwrites = overwrites, category = category)
             print("creating voice channel for team", str(i))
     
     existingTextChannels = [channel.name for channel in guild.text_channels]
     for i in range(1,numberOfTeams+1):
         if 'team'+str(i)+'-chat' not in existingTextChannels:
+            if 'Chat teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10) not in [category.name for category in guild.categories]:
+                category = await guild.create_category('Chat teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10))
+            else:
+                category = [category for category in guild.categories if category.name == 'Chat teams {}-{}'.format(int(i/10)*10, 9+int(i/10)*10)][0]
+
             teamRole = [role for role in guild.roles if role.name == 'team'+str(i)][0]
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
                 teamRole: discord.PermissionOverwrite(read_messages=True, send_messages=True, read_message_history=True) }
-            await guild.create_text_channel(name = 'team'+str(i)+'-chat', overwrites = overwrites)
+            await guild.create_text_channel(name = 'team'+str(i)+'-chat', overwrites = overwrites, category = category)
             print("creating text channel for team", str(i))
     
     surlusTextChannels = ['team'+str(i) +'-chat' for i in range(numberOfTeams+1, len(existingTextChannels))]
@@ -714,7 +740,7 @@ soon disappear.".format(str(numberOfTeams))
 
     global quizOn
     quizOn = True
-    print("Quiz started!")
+    print("Quiz started! Please wait for the image of a broken coconut on the channel you issued the command from before starting.")
 
     # make dicts of all team and common channels
     # This has been done to avoid issues with dictionary.clear()
@@ -738,14 +764,13 @@ soon disappear.".format(str(numberOfTeams))
     #json.dump(scores, open("scores.txt",'w'))
     with open("scores.txt","w") as scoresFileObject:
         json.dump(scores, scoresFileObject)
-
+    
     #Welcome texts
-    response = "The bot is ready to bring the pounces to you"
-    await commonChannels[qmChannel].send(response)    
+    response = "The bot is ready to bring the pounces to you. Plese don't start the quiz yet."
+    await commonChannels[qmChannel].send(response) 
+    await commonChannels[qmChannel2].send(response)    
+    await commonChannels[qmChannel3].send(response) 
 
-    response = "Guesses on bounce you make by with `!bounce` or \
-`!b` command appear here"
-    await commonChannels[qmChannel].send(response)
 
     response = "Welcome! Below are the commands you can use to set scores. \
 Teams are always abbreviated as t1 t2 etc.\
@@ -755,23 +780,14 @@ Teams are always abbreviated as t1 t2 etc.\
 \n`!minus 5 t1 t2` to deduct 5 points from team1 and team2"
     await commonChannels[scoreChannel].send(response)
 
-    await broadcastToAllTeams("Welcome to the quiz! This is your \
-team's private text channel.\
+    await broadcastToAllTeams("Welcome to the QFI quiz! This is your \
+team's private text channel. Why don't you give yourself an identifiable nickname by \
+right-clicking on your name on the right column and changing \
+nickname\
 \nCommands for the bot:\
 \n`!p your guess here` or `!pounce your guess here` to pounce,\
-\n`!b your guess here` or `!bounce your guess here` to answer on bounce,\
-\n`!scores` to see the scores.")
+\n`!scores` to see the scores in the dscending order of points, `!scores unsorted` for scores in increasing order of team numbers.")
 
-    await broadcastToAllTeams("If you are seeing this message in the middle \
-of a quiz, alert the quizmaster. The scores might need to be checked.")
-
-    await broadcastToAllTeams("\n1)Please have an identifiable nickname by \
-right-clicking on your name on the right column and changing \
-nickname (it won't affect your name in other discord guilds)\
-\n2)Please mute your microphone\
-\n3)Go to user settings -> notifications and turn off \
-notifications for User Joined, User Leave, User Moved, Viewer \
-Join, Viewer Leave")
     
     await ctx.send("All team channels have been cleared, and all scores have \
 been set to 0. You can begin the quiz. \
@@ -782,6 +798,8 @@ delete the last slide sent) enter `!prev`\
 \nIf you want to unassign all team roles, make the bot an admin \
 and issue the command `!resetTeams`. Those who wish to participate \
 have to type `!join` to be automatically assigned a team.")
+
+    await ctx.send("Breaking a coconut for the success of this quiz\nhttps://media.mnn.com/assets/images/2013/06/main_coconutwater.jpg.560x0_q80_crop-smart.jpg")
 
     return
 
@@ -799,7 +817,7 @@ async def on_ready():
         if os.path.exists('slides.pkl'):
             print("loading")
             load()
-
+        global numberOfTeams
         numberOfTeams = len(scoresInFile)
         global commonChannels
         global teamChannels
@@ -817,20 +835,24 @@ async def on_ready():
         for team in teamChannels:
             scores[team] = scoresInFile[team]
 
+        if os.path.exists('pounces.pkl'):
+            state = recoverSlideState('pounces.pkl')
+            global pounce_messages
+            pounce_messages = state['pounceMessages']
+        
         global quizOn
         quizOn=True
 
         await commonChannels[qmChannel].send('Bot was restarted, scores restored')
-        await broadcastToAllTeams("The bot had to reset for reasons unknown \
-but the scores must have been retained. Below are the scores \
-after the last update. Please alert the quizmaster if \
-there's a discrepancy.")
-        response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scoresInFile)
-        await broadcastToAllTeams(response)
+        await broadcastToAllTeams("If you like these questions and want more like this, why don't you subscribe to QFI and get access to hundreds of great quizzes? Find details here: http://www.quizfoundation.com/get-questions/")
 
-        response = "Here are the scores after reset\n"
-        response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scoresInFile)
-        await commonChannels[scoreChannel].send(response)
+        try:
+            response = "Here are the scores after reset\n"
+            response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scoresInFile)
+            await commonChannels[scoreChannel].send(response)
+        except:
+                response = "Please try `!scores` for the scores\n"
+                await commonChannels[scoreChannel].send(response)
     else:
         print("Please !startQuiz")
 
@@ -901,6 +923,10 @@ async def updateScores(ctx, *args, **kwargs):
     if not quizOn:
         response = messageQuizNotOn 
         await ctx.message.channel.send(response)
+        return
+    auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
+    if not auth:
+        await ctx.send(response)
         return
 
     if len(args) <2:
@@ -982,10 +1008,6 @@ async def updateScores(ctx, *args, **kwargs):
                 pass
 
     if len(args)>=2:
-        auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
-        if not auth:
-            await ctx.send(response)
-            return
         # Get updated scores, save to file, and send updates to teams
         points = int(args[0])
         teams = [team.replace('t','team') for team in args[1:]]
@@ -996,7 +1018,8 @@ async def updateScores(ctx, *args, **kwargs):
         sign = lambda x: ('+', '')[x<0]
         response = '{}{} to {}. '.format(sign(points),str(points), ', '.join(team for team in teams)) 
         channel = commonChannels[scoreChannel]
-        await channel.send(response)
+        await channel.send("Logging "+response)
+        await ctx.channel.send(response)
 
         with open("scores.txt","w") as scoresFileObject:
             json.dump(scores, scoresFileObject)
@@ -1108,18 +1131,15 @@ def load():
     global presentationLoaded
     global slides
     global slideNumber
-    global pounce_messages
     presentationLoaded = state['presentationLoaded']
     slides = state['slides']
     slideNumber = state['slideNumber']
-    pounce_messages = state['pounceMessages']
 
 def save():
     state = {}
     state['presentationLoaded'] = presentationLoaded
     state['slides'] = slides
     state['slideNumber'] = slideNumber
-    state['pounceMessages'] = pounce_messages
     saveSlideState('slides.pkl', state)
     print("Saving:")
     for key in state:
