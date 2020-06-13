@@ -184,6 +184,7 @@ the `!startQuiz` command."
     aliases = ["assignMe", "joinTeam"],
     help="`!join 3` to join team3. Just `!join` for a random team"
     )
+@commands.max_concurrency(1,per=commands.BucketType.guild,wait=True)
 async def assignRoles(ctx, *args, **kwargs):
     # Authorisation
     if not getAuthorizedServer(bot, guildId, ctx):
