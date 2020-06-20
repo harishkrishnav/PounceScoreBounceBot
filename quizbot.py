@@ -296,6 +296,33 @@ async def bounce(ctx, *args, **kwargs):
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
     await broadcastToAllTeams(response)
 
+@bot.command(
+    name="shout",
+    aliases = ["hail", "announce", "exclaim", "praise"], 
+    help="Announce something to everyone, empty text would send nice question"
+    )
+async def shout(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    # Read the guess and send to all channels
+
+    guess = ' '.join([word for word in args])
+    if not len(guess):
+        guess = "Nice question"
+    author, authorName = getAuthorAndName(ctx)
+    team = getTeam(author)
+    if len(team):
+        response = 'Says {}\'s {}: {}'.format(team, authorName, guess)
+    else:
+        response = 'Announcement by {}: {}'.format(authorName, guess)
+    channel = commonChannels[qmChannel]
+    await channel.send(response)
+    await broadcastToAllTeams(response)
 
 
 @bot.command(name="clearThis", help="delete all messages in a channel")
