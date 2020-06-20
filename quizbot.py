@@ -418,7 +418,7 @@ async def pounce(ctx, *args, **kwargs):
             quickest_team = team
             response += "You are the first to pounce."
         else:
-            response += "The quickest pounce was in {:.2f} seconds by {}".format(quickest,team)
+            response += "The quickest pounce was in {:.2f} seconds by {}".format(quickest,quickest_team)
         save()
     await ctx.message.channel.send(response)
 
