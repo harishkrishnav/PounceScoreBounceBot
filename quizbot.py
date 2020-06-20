@@ -981,6 +981,39 @@ async def resetscores(ctx, *args, **kwargs):
     response = "Scores reset to 0"
     await ctx.message.channel.send(response)
 
+@bot.command(name="archiveAll", aliases = ["archiveall", "archiveAllChats", "saveAll"], help="No need to start quiz - save all chat texts")
+async def saveAllChats(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return
+    auth, response = getAuthorized(ctx,"Only ", " can save chats", 'quizmaster', 'scorer', 'admin')
+    if not auth:
+        await ctx.send(response)
+        return
+    baseFilePath = "saved team chats"
+    if os.path.exists(baseFilePath):
+        await ctx.send("There is already a folder called saved team chats. Please rename the existing folder, move it elsewhere, or delete it")
+        return
+    else:
+        os.mkdir(baseFilePath)
+
+    guild = bot.get_guild(int(guildId))
+    teamChannels = {}
+    for channel in guild.text_channels:
+        cn = channel.name
+        if cn.startswith('team') and cn.endswith('-chat'):
+            teamChannels[cn.replace('-chat','')] = bot.get_channel(channel.id)
+    for teamChannel in teamChannels:
+        messages = await teamChannels[teamChannel].history(limit=2000, oldest_first=True).flatten()
+        if len(messages) < 3:
+            print("Not Saving",teamChannels[teamChannel].name)
+            continue
+        fileName = teamChannels[teamChannel].name+'.txt'
+        print("Saving",teamChannels[teamChannel].name,"in",os.path.join(baseFilePath,fileName))
+        with open(os.path.join(baseFilePath,fileName), "w") as outfile:
+            for message in messages:
+                #str(message.author.display_name).split("#")[0], message.clean_content, message.created_at)
+                outfile.write(str(message.author.display_name).split("#")[0]+" "+str(message.created_at)+'\n'+message.clean_content+'\n\n')
+    await ctx.send("Done saving")    
 
 ####################
 #  Error Handling  #
