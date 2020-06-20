@@ -1009,9 +1009,8 @@ async def saveAllChats(ctx, *args, **kwargs):
             continue
         fileName = teamChannels[teamChannel].name+'.txt'
         print("Saving",teamChannels[teamChannel].name,"in",os.path.join(baseFilePath,fileName))
-        with open(os.path.join(baseFilePath,fileName), "w") as outfile:
+        with open(os.path.join(baseFilePath,fileName), "w", encoding="utf-8") as outfile:
             for message in messages:
-                #str(message.author.display_name).split("#")[0], message.clean_content, message.created_at)
                 outfile.write(str(message.author.display_name).split("#")[0]+" "+str(message.created_at)+'\n'+message.clean_content+'\n\n')
     await ctx.send("Done saving")    
 
