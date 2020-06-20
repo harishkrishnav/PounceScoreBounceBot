@@ -172,17 +172,19 @@ permissions. Make the bot an admin and run this again.")
 def deleteFiles(directoryPath, *extensions):
     for extension in extensions:
         filelist = [f for f in os.listdir(directoryPath) if f.endswith(extension)]
-        print("deleting", filelist)
+        print("deleting",extension, filelist)
         for f in filelist:
             os.remove(os.path.join(directoryPath, f))
 
 def convertToImages(presentationDirPath, presentationFileName):
+    
     deleteFiles(presentationDirPath, '.jpg')
     presentationFilePath = os.path.join(presentationDirPath, presentationFileName)
 
     imagelist = []
-
+    print("Converting PDF to images (might take couple of minutes while no message is displayed; do not panic)")
     pages = convert_from_path(presentationFilePath, 100)
+    print("Now saving images")
     for index, page in enumerate(pages):
         filename = str(index)+'.jpg'
         page.save(os.path.join(presentationDirPath, filename), 'JPEG')
@@ -190,6 +192,25 @@ def convertToImages(presentationDirPath, presentationFileName):
         print("generating page, ", filename)
 
     return imagelist
+
+def getMostFrequentSlide(presentationDirPath):
+    filelist = [(f,os.stat(os.path.join(presentationDirPath,f)).st_size) for f in os.listdir(presentationDirPath) if f.endswith('jpg')]
+    file_sizes = {}
+    for f in filelist:
+        rounded_size = (f[1] // 5) * 5
+        if rounded_size in file_sizes:
+            file_sizes[rounded_size].append(f[0])
+        else:
+            file_sizes[rounded_size] = [f[0]]
+
+    most_common_slides = file_sizes[(max(file_sizes, key= lambda x: len(file_sizes[x])))]
+    return most_common_slides
+
+async def previewSlide(ctx, filename):
+    with open(filename, 'rb') as f:
+        picture = discord.File(f)
+        channel = ctx.message.channel
+        await channel.send("Is this the safety slide?",file=picture)
 
 
 async def updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel):

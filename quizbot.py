@@ -91,10 +91,11 @@ import random
 import os
 import json
 import asyncio
+import time
 
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
-        getTeamChannels, unassignTeams, deleteFiles, convertToImages,
+        getTeamChannels, unassignTeams, deleteFiles, convertToImages, getMostFrequentSlide, previewSlide,
         updateSlides, saveSlideState, recoverSlideState, getAuthorizedServer, getAuthorizedUser)
 
 from discord.ext import commands
@@ -169,6 +170,11 @@ presentationFileName = ''
 presentationLoaded = False
 slideNumber = 0
 slides = []
+safetySlides = []
+autoSplit = False
+time_question = None
+quickest = 3600
+quickest_team = None
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command. However, \
@@ -400,8 +406,22 @@ async def pounce(ctx, *args, **kwargs):
     response = 'Guess on pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
     channel = commonChannels[qmChannel]
     await channel.send(response)
-    response = "Pounce submitted"
+    response = "Pounce submitted."
+    if time_question and autoSplit:
+        global quickest
+        global quickest_team
+        time_now = time.time()
+        difference = "{:.2f}".format(time_now-time_question)
+        response += "You answered in {} seconds.".format(difference)
+        if time_now-time_question < quickest and time_now-time_question<3600:
+            quickest = time_now-time_question
+            quickest_team = team
+            response += "You are the first to pounce."
+        else:
+            response += "The quickest pounce was in {:.2f} seconds by {}".format(quickest,team)
+        save()
     await ctx.message.channel.send(response)
+
 
 
 #############################################
@@ -432,14 +452,17 @@ async def loadfile(ctx, *args, **kwargs):
         await ctx.message.channel.send(response)
         return
     if presentationLoaded:
-        response = 'A presentation is already loaded'
-        print(response)
-        ctx.message.channel.send(response)
-        return
+        if not len(args):
+            response = 'A presentation is already loaded. If you are sure you want to load another, type `!loadfile force`'
+            print(response)
+            await ctx.message.channel.send(response)
+            return       
     # Clear the directory
     if not os.path.isdir(presentationDirPath):
         os.mkdir(presentationDirPath)
-    deleteFiles(presentationDirPath, 'jpg', 'pdf')
+    print("Deleting existing PDFs if any...")
+    deleteFiles(presentationDirPath, 'pdf')
+    print("Complete")
     # Load file from most recent message sent on fileChannel
     message = await commonChannels[fileChannel].history(limit=1).flatten()
     if len(message) > 0:
@@ -453,7 +476,7 @@ async def loadfile(ctx, *args, **kwargs):
             print(presentationPath)
             await message.attachments[0].save(presentationPath)
         else:
-            response = "The last message sent to the channel needs the file attached"
+            response = "The last message in the file-upload channel needs to be the PDF"
             await ctx.message.channel.send(response)
             return
     else:
@@ -463,14 +486,59 @@ async def loadfile(ctx, *args, **kwargs):
     # if the file does not exist in the message, return error
     # if file exists in the message, download file into presentationDirPath
     # and generate slide images
+    response = "Loading file. This might take about two minutes."
+    await ctx.message.channel.send(response) 
     global slides
     slides = convertToImages(presentationDirPath, presentationFileName)
-    print(slides)
     presentationLoaded = True
     global slideNumber
     slideNumber = -1
-    response = "Presentation loaded"
+    global safetySlides
+    safetySlides = getMostFrequentSlide(presentationDirPath)
+    response = "Presentation loaded." 
+    if len(safetySlides)>2:
+        response+="The bot might have found a potential split between question and answer slides. \
+        \nDo you have roughly {} questions?".format(str(len(safetySlides)))
+        await ctx.message.channel.send(response)
+        await previewSlide(ctx, os.path.join(presentationDirPath,safetySlides[0]))
+        response = "By default, it is assumed yes. If no, please type `!turnOffAutoSplit` any time during the quiz"
+        await ctx.message.channel.send(response)
+        global autoSplit
+        autoSplit = True
+    else:
+        await ctx.message.channel.send(response)
+    save()
+    
+
+@bot.command(
+    name="turnOffAutoSplit",
+    aliases=["turnoffautosplit",],
+    help="Disable intelligent splitting of question and answer slides"
+    )
+async def turnOff(ctx, *args, **kwargs):
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can do this',
+            'quizmaster', 'scorer'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+    if not presentationLoaded:
+        response = "Please load the presentation first"
+        await ctx.message.channel.send(response)
+        return
+
+    global autoSplit
+    autoSplit = False
+    response = "Done! Turned off the automatic question-answer splitting."
     await ctx.message.channel.send(response)
+    save()
+
+
 
 @bot.command(
     name="n",
@@ -514,8 +582,20 @@ files channel and then run `!loadfile`"
     filename = os.path.join(presentationDirPath, slideName)
 
     await updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel)
-    save()
 
+    global safetySlides
+    global autoSplit
+    global time_question
+    global quickest
+    if autoSplit:
+        if slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
+            print("End of question")
+            time_question = time.time()
+            quickest = 3600
+            quickest_team = None
+
+    save()
+             
 
 @bot.command(
     name="prev",
@@ -1072,18 +1152,33 @@ def load():
     global presentationLoaded
     global slides
     global slideNumber
+    global safetySlides
+    global autoSplit
+    global time_question
+    global quickest
+    global quickest_team
     presentationLoaded = state['presentationLoaded']
     slides = state['slides']
     slideNumber = state['slideNumber']
+    safetySlides = state['safetySlides']
+    autoSplit = state['autoSplit']
+    time_question = state['time_question']
+    quickest = state['quickest']
+    quickest_team = state['quickest_team']
 
 def save():
     state = {}
     state['presentationLoaded'] = presentationLoaded
     state['slides'] = slides
     state['slideNumber'] = slideNumber
+    state['safetySlides']=safetySlides
+    state['autoSplit']=autoSplit
+    state['time_question']=time_question
+    state['quickest']=quickest
+    state['quickest_team']=quickest_team
     saveSlideState('slides.pkl', state)
-    print("Saving:")
-    for key in state:
-        print(key, state[key])
+    #print("Saving:")
+    #for key in state:
+    #    print(key, state[key])
 
 bot.run(token)
