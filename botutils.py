@@ -2,6 +2,7 @@ import discord
 from pdf2image import convert_from_path
 import os
 import pickle
+import random
 
 async def deleteAllMessages(bot, guildId, whitelistChannels):
     """
@@ -229,8 +230,10 @@ async def updateSlides(ctx, filename, commonChannels, teamChannels, questionChan
     await channel.send(url)
     channel = commonChannels[scoreChannel]
     await channel.send(url)
-    for team in teamChannels:
-        await teamChannels[team].send(url)
+    shuffledTeams = list(teamChannels)
+    random.shuffle(shuffledTeams)
+    for team in shuffledTeams:
+        await shuffledTeams[team].send(url)
     response = "All teams have received the slide"
     await ctx.message.channel.send(response)
 
