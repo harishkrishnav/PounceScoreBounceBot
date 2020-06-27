@@ -175,6 +175,7 @@ autoSplit = False
 time_question = None
 pounce_order = []
 pounce_times = {}
+pounce_messages = {}
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command. However, \
@@ -408,7 +409,15 @@ async def pounce(ctx, *args, **kwargs):
     if autoSplit and team in pounce_order:
         response = "Warning! This team has already pounced for this question. " + response
     channel = commonChannels[qmChannel]
-    await channel.send(response)
+
+    pounceMessage = await channel.send(response)
+    await pounceMessage.add_reaction('\U00002705')
+    await pounceMessage.add_reaction('\U000026D4')
+    await pounceMessage.add_reaction('\U0001F986')
+    await pounceMessage.add_reaction('5\N{variation selector-16}\N{combining enclosing keycap}')
+    global pounce_messages
+    pounce_messages[pounceMessage.id] = team
+
     response = "Pounce submitted. "
     if time_question and autoSplit:
         global pounce_times
@@ -430,7 +439,55 @@ async def pounce(ctx, *args, **kwargs):
             response += r": " + r'; '.join((teamName + " pounced {:.1f} seconds ahead of you".format(pounce_times[team] - pounce_times[teamName])) for teamName in pounce_order[:-1])
         save()
     await ctx.message.channel.send(response)
+    
+    state = {}
+    state['pounceMessages'] = pounce_messages
+    saveSlideState('pounces.pkl', state)
 
+
+@bot.event
+async def on_raw_reaction_add(payload):
+    if payload.user_id == bot.user.id or payload.emoji.name not in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986' ]:
+        return
+    message_id = payload.message_id
+    if message_id not in pounce_messages:
+        return
+    team = pounce_messages[message_id]
+    pounceChannel = await bot.fetch_channel(payload.channel_id)
+    #print(pounceChannel.name)
+    pounceMessage = await pounceChannel.fetch_message(payload.message_id)
+    #print(pounceMessage.author)
+    #print("Here", reaction.emoji, reaction.count, team)
+    await pounceMessage.add_reaction('\U0001F441')
+    
+    if payload.emoji.name == '\U00002705':
+        points = 10
+    elif payload.emoji.name == '\U000026D4':
+        points = -5
+    elif payload.emoji.name == '5\N{variation selector-16}\N{combining enclosing keycap}':
+        points = 5
+    elif payload.emoji.name == '\U0001F986':
+        points = 0
+    #print(points)
+    scores[team] += points
+    sign = lambda x: ('+', '')[x<0]
+    response = '{}{} to {}. '.format(sign(points),str(points), team) 
+    channel = commonChannels[scoreChannel]
+
+    response = '{}{} to {}. '.format(sign(points),str(points), team) 
+    await channel.send("Logged "+response)
+
+    await pounceChannel.send(response)
+
+    with open("scores.txt","w") as scoresFileObject:
+        json.dump(scores, scoresFileObject)
+
+    channel=teamChannels[team]
+    if points != 0:
+        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+    else:
+        response = 'You did not gain or lose points for that pounce. Your score remains {}'.format(scores[team])
+    await channel.send(response)
 
 
 #############################################
@@ -702,6 +759,8 @@ async def endQuiz(ctx, *args, **kwargs):
         os.remove("scores.txt")
     if os.path.exists("slides.pkl"):
         os.remove("slides.pkl")
+    if os.path.exists("pounces.pkl"):
+        os.remove("pounces.pkl")
     print("Quiz ended")
 
 
@@ -762,11 +821,6 @@ soon disappear.".format(str(numberOfTeams))
     scores.clear()
     for team in teamChannels:
         scores[team] = 0
-
-    global pounce_order
-    global pounce_times
-    pounce_order = []
-    pounce_times = {}
     
     #create score file
     #json.dump(scores, open("scores.txt",'w'))
@@ -850,6 +904,11 @@ async def on_ready():
         scores.clear()
         for team in teamChannels:
             scores[team] = scoresInFile[team]
+
+        if os.path.exists('pounces.pkl'):
+            state = recoverSlideState('pounces.pkl')
+            global pounce_messages
+            pounce_messages = state['pounceMessages']
 
         global quizOn
         quizOn=True
