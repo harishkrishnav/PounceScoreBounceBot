@@ -175,6 +175,8 @@ autoSplit = False
 time_question = None
 quickest = 3600
 quickest_team = None
+pounce_order = []
+pounce_times = {}
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command. However, \
@@ -402,23 +404,34 @@ async def pounce(ctx, *args, **kwargs):
     # Read the guessed pounce and send it
     guess = ' '.join([word for word in args])
     author, authorName = getAuthorAndName(ctx)
-    team = getTeam(author)
+    team = getTeam(author).split(",")[0]
     response = 'Guess on pounce by **{}\'**s {}: \'{}\''.format(team, authorName, guess)
+    global pounce_order
+    if autoSplit and team in pounce_order:
+        response = "Warning! This team has already pounced for this question. " + response
     channel = commonChannels[qmChannel]
     await channel.send(response)
-    response = "Pounce submitted."
+    response = "Pounce submitted. "
     if time_question and autoSplit:
         global quickest
         global quickest_team
+        global pounce_times
         time_now = time.time()
-        difference = "{:.2f}".format(time_now-time_question)
-        response += "You answered in {} seconds.".format(difference)
-        if time_now-time_question < quickest and time_now-time_question<3600:
-            quickest = time_now-time_question
-            quickest_team = team
-            response += "You are the first to pounce."
+        #difference = "{:.2f}".format(time_now-time_question)
+        #response += "You took about {} seconds. ".format(difference)
+        if team in pounce_order:
+            pounce_order.remove(team)
+            pounce_order.append(team)
+            response += "You seem to have pounced multiple times for this question. Which of your submissions is considered is up to the quizmaster."
         else:
-            response += "The quickest pounce was in {:.2f} seconds by {}".format(quickest,quickest_team)
+            pounce_order.append(team)
+
+        pounce_times[team] = time_now-time_question
+
+        rank = len(pounce_order)
+        response += "\nYou are the {} team to pounce".format("%d%s" % (rank,"tsnrhtdd"[(rank/10%10!=1)*(rank%10<4)*rank%10::4]))
+        if rank >= 2:
+            response += r": " + r'; '.join((teamName + " pounced {:.1f} seconds before you".format(pounce_times[team] - pounce_times[teamName])) for teamName in pounce_order[:-1])
         save()
     await ctx.message.channel.send(response)
 
@@ -592,12 +605,13 @@ files channel and then run `!loadfile`"
     global time_question
     global quickest
     global quickest_team
-    if autoSplit:
-        if slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
-            print("End of question")
-            time_question = time.time()
-            quickest = 3600
-            quickest_team = None
+    global pounce_order
+    if autoSplit and slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
+        print("End of question")
+        time_question = time.time()
+        quickest = 3600
+        quickest_team = None
+        pounce_order = []
 
     save()
              
