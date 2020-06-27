@@ -230,10 +230,10 @@ async def updateSlides(ctx, filename, commonChannels, teamChannels, questionChan
     await channel.send(url)
     channel = commonChannels[scoreChannel]
     await channel.send(url)
-    shuffledTeams = list(teamChannels)
+    shuffledTeams = list(teamChannels.keys())
     random.shuffle(shuffledTeams)
     for team in shuffledTeams:
-        await shuffledTeams[team].send(url)
+        await teamChannels[team].send(url)
     response = "All teams have received the slide"
     await ctx.message.channel.send(response)
 

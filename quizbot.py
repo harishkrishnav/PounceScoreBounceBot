@@ -505,6 +505,10 @@ async def loadfile(ctx, *args, **kwargs):
         await ctx.message.channel.send(response)
         global autoSplit
         autoSplit = True
+        global quickest
+        global quickest_team
+        quickest = 3600
+        quickest_team = None
     else:
         await ctx.message.channel.send(response)
     save()
@@ -587,6 +591,7 @@ files channel and then run `!loadfile`"
     global autoSplit
     global time_question
     global quickest
+    global quickest_team
     if autoSplit:
         if slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
             print("End of question")
@@ -668,6 +673,10 @@ async def endQuiz(ctx, *args, **kwargs):
     quizOn=False
     global presentationLoaded
     presentationLoaded = False
+    global quickest
+    global quickest_team
+    quickest = 3600
+    quickest_team = None
     if os.path.exists(presentationDirPath):
         deleteFiles(presentationDirPath, 'jpg', 'pdf')
     #clear everything
@@ -746,6 +755,11 @@ soon disappear.".format(str(numberOfTeams))
     for team in teamChannels:
         scores[team] = 0
 
+    global quickest
+    global quickest_team
+    quickest = 3600
+    quickest_team = None
+    
     #create score file
     #json.dump(scores, open("scores.txt",'w'))
     with open("scores.txt","w") as scoresFileObject:
