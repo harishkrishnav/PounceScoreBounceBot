@@ -173,8 +173,6 @@ slides = []
 safetySlides = []
 autoSplit = False
 time_question = None
-quickest = 3600
-quickest_team = None
 pounce_order = []
 pounce_times = {}
 
@@ -413,8 +411,6 @@ async def pounce(ctx, *args, **kwargs):
     await channel.send(response)
     response = "Pounce submitted. "
     if time_question and autoSplit:
-        global quickest
-        global quickest_team
         global pounce_times
         time_now = time.time()
         #difference = "{:.2f}".format(time_now-time_question)
@@ -422,7 +418,7 @@ async def pounce(ctx, *args, **kwargs):
         if team in pounce_order:
             pounce_order.remove(team)
             pounce_order.append(team)
-            response += "You seem to have pounced multiple times for this question. Which of your submissions is considered is up to the quizmaster."
+            response += "You seem to have pounced multiple times for this question. Please discuss properly and submit only one pounce per question in the future."
         else:
             pounce_order.append(team)
 
@@ -431,7 +427,7 @@ async def pounce(ctx, *args, **kwargs):
         rank = len(pounce_order)
         response += "\nYou are the {} team to pounce".format("%d%s" % (rank,"tsnrhtdd"[(rank/10%10!=1)*(rank%10<4)*rank%10::4]))
         if rank >= 2:
-            response += r": " + r'; '.join((teamName + " pounced {:.1f} seconds before you".format(pounce_times[team] - pounce_times[teamName])) for teamName in pounce_order[:-1])
+            response += r": " + r'; '.join((teamName + " pounced {:.1f} seconds ahead of you".format(pounce_times[team] - pounce_times[teamName])) for teamName in pounce_order[:-1])
         save()
     await ctx.message.channel.send(response)
 
@@ -518,10 +514,10 @@ async def loadfile(ctx, *args, **kwargs):
         await ctx.message.channel.send(response)
         global autoSplit
         autoSplit = True
-        global quickest
-        global quickest_team
-        quickest = 3600
-        quickest_team = None
+        global pounce_order
+        global pounce_times
+        pounce_order = []
+        pounce_times = {}
     else:
         await ctx.message.channel.send(response)
     save()
@@ -603,15 +599,13 @@ files channel and then run `!loadfile`"
     global safetySlides
     global autoSplit
     global time_question
-    global quickest
-    global quickest_team
     global pounce_order
+    global pounce_times
     if autoSplit and slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
         print("End of question")
         time_question = time.time()
-        quickest = 3600
-        quickest_team = None
         pounce_order = []
+        pounce_times = {}
 
     save()
              
@@ -687,10 +681,10 @@ async def endQuiz(ctx, *args, **kwargs):
     quizOn=False
     global presentationLoaded
     presentationLoaded = False
-    global quickest
-    global quickest_team
-    quickest = 3600
-    quickest_team = None
+    global pounce_order
+    global pounce_times
+    pounce_order = []
+    pounce_times = {}
     if os.path.exists(presentationDirPath):
         deleteFiles(presentationDirPath, 'jpg', 'pdf')
     #clear everything
@@ -769,10 +763,10 @@ soon disappear.".format(str(numberOfTeams))
     for team in teamChannels:
         scores[team] = 0
 
-    global quickest
-    global quickest_team
-    quickest = 3600
-    quickest_team = None
+    global pounce_order
+    global pounce_times
+    pounce_order = []
+    pounce_times = {}
     
     #create score file
     #json.dump(scores, open("scores.txt",'w'))
@@ -1183,16 +1177,19 @@ def load():
     global safetySlides
     global autoSplit
     global time_question
-    global quickest
-    global quickest_team
-    presentationLoaded = state['presentationLoaded']
-    slides = state['slides']
-    slideNumber = state['slideNumber']
-    safetySlides = state['safetySlides']
-    autoSplit = state['autoSplit']
-    time_question = state['time_question']
-    quickest = state['quickest']
-    quickest_team = state['quickest_team']
+    global pounce_times
+    global pounce_order
+    try:
+        presentationLoaded = state['presentationLoaded']
+        slides = state['slides']
+        slideNumber = state['slideNumber']
+        safetySlides = state['safetySlides']
+        autoSplit = state['autoSplit']
+        time_question = state['time_question']
+        pounce_order = state['pounce_order']
+        pounce_times = state['pounce_times']
+    except:
+        print("Please STOP QUIZ or delete slides.pkl")
 
 def save():
     state = {}
@@ -1202,8 +1199,8 @@ def save():
     state['safetySlides']=safetySlides
     state['autoSplit']=autoSplit
     state['time_question']=time_question
-    state['quickest']=quickest
-    state['quickest_team']=quickest_team
+    state['pounce_order']=pounce_order
+    state['pounce_times']=pounce_times
     saveSlideState('slides.pkl', state)
     #print("Saving:")
     #for key in state:
