@@ -147,7 +147,8 @@ this script again")
 numberOfTeams = 8
 questionChannel = 'slides-and-media'
 qmChannel = 'qm-control-panel'
-scoreChannel  = 'scores'
+scoreChannel  = 'scores-log'
+scoreTableChannel = 'points-table'
 fileChannel = 'file-upload'
 #whitelistChannels = ['general','discord-and-bot-help'] 
 whitelistChannels = [
@@ -164,7 +165,7 @@ scores = {}
 quizOn = False
 
 sco_command_messages = []
-
+scoretable_messages = {}
 presentationDirPath = os.path.join(os.curdir,'slide_images')
 presentationFileName = ''
 presentationLoaded = False
@@ -317,7 +318,6 @@ async def shout(ctx, *args, **kwargs):
         await ctx.message.channel.send(response)
         return
     # Read the guess and send to all channels
-
     guess = ' '.join([word for word in args])
     if not len(guess):
         guess = "Nice question"
@@ -364,7 +364,7 @@ async def clearThis(ctx, *args, **kwargs):
 
 @bot.command(
     name="scores",
-    aliases = ["pointstable"],
+    aliases = ["SCORES"],
     help="Displays the scores"
     )
 async def displayScores(ctx, *args, **kwargs):
@@ -384,7 +384,50 @@ async def displayScores(ctx, *args, **kwargs):
         )
     await ctx.message.channel.send(response)
 
+@bot.command(
+    name="scoretable",
+    aliases = ["scoreTable", "pointstable", "pointsTable"],
+    help="Refill points-table channel"
+)
+async def populateScoreTable(ctx, *args, **kwargs):
+    # Authorisation
+    if ctx is not "reset":
+        if not getAuthorizedServer(bot, guildId, ctx):
+            return
+        auth, response = getAuthorized(
+                ctx,
+                "Only ", 
+                " can manage this channel",
+                'quizmaster', 'scorer', 'admin'
+                )
+        if not auth:
+            ctx.send(response)
+            return
 
+    global scoretable_messages
+    scoretable_messages = {}
+    channel = commonChannels[scoreTableChannel]
+
+    while(True):
+        deleted = await channel.purge(limit=50)
+        if not len(deleted):
+            break
+    if not quizOn:
+        response = "There was a restart. Refilling this table."
+        await channel.send(response)
+
+    for team in scores:
+        response = '{}\t{}'.format(str(team),str(scores[team]).center(18))
+        message = await channel.send(response)
+        scoretable_messages[team] = message
+        await message.add_reaction('\U0001F4DB')
+        for score_emoji in range(0,10):
+            await message.add_reaction(str(score_emoji)+'\N{variation selector-16}\N{combining enclosing keycap}')
+        await message.add_reaction('\N{keycap ten}')
+        await message.add_reaction('\U00002705')
+        await channel.send(r"` `")
+    response = '\U0001F4DB'+" stands for -5.  "+'\U00002705' + " is the maximum score per question which in this quiz is +10.\nAward a team 0 points to refresh their score."  
+    await channel.send(response)
 
 @bot.command(
     name="p",
@@ -447,48 +490,102 @@ async def pounce(ctx, *args, **kwargs):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.user_id == bot.user.id or payload.emoji.name not in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986' ]:
+    if payload.user_id == bot.user.id: 
         return
     message_id = payload.message_id
-    if message_id not in pounce_messages:
-        return
-    team = pounce_messages[message_id]
-    pounceChannel = await bot.fetch_channel(payload.channel_id)
-    #print(pounceChannel.name)
-    pounceMessage = await pounceChannel.fetch_message(payload.message_id)
-    #print(pounceMessage.author)
-    #print("Here", reaction.emoji, reaction.count, team)
-    await pounceMessage.add_reaction('\U0001F441')
+    if payload.emoji.name in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986']:
+        if message_id in pounce_messages:
+            team = pounce_messages[message_id]
+            pounceChannel = await bot.fetch_channel(payload.channel_id)
+            #print(pounceChannel.name)
+            pounceMessage = await pounceChannel.fetch_message(payload.message_id)
+            #print(pounceMessage.author)
+            #print("Here", reaction.emoji, reaction.count, team)
+            await pounceMessage.add_reaction('\U0001F441')
+            
+            if payload.emoji.name == '\U00002705':
+                points = 10
+            elif payload.emoji.name == '\U000026D4':
+                points = -5
+            elif payload.emoji.name == '5\N{variation selector-16}\N{combining enclosing keycap}':
+                points = 5
+            elif payload.emoji.name == '\U0001F986':
+                points = 0
+            #print(points)
+            scores[team] += points
+            sign = lambda x: ('+', '')[x<0]
+            response = '{}{} to {}. '.format(sign(points),str(points), team) 
+            channel = commonChannels[scoreChannel]
+
+            response = '{}{} to {}. '.format(sign(points),str(points), team) 
+            await channel.send("Logged "+response)
+
+            await pounceChannel.send(response)
+
+            with open("scores.txt","w") as scoresFileObject:
+                json.dump(scores, scoresFileObject)
+
+            channel=teamChannels[team]
+            if points != 0:
+                response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
+            else:
+                response = 'You did not gain or lose points for that pounce. Your score remains {}'.format(scores[team])
+            await channel.send(response)
+            try:
+                await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
+            except:
+                await commonChannels[scoreChannel].send("Did not edit score table. It is probably reloading. If it is not, to refresh the score of a team, award them 0 points.")
+
+
+
+    table_emojis = ['\U0001F4DB', '\N{keycap ten}' , '\U00002705']
+    if '\N{variation selector-16}\N{combining enclosing keycap}' in payload.emoji.name or payload.emoji.name in table_emojis:
+        messageChannel = await bot.fetch_channel(payload.channel_id)
+        scoreMessage = await messageChannel.fetch_message(payload.message_id)
+        if scoreMessage.id in [m.id for m in list(scoretable_messages.values())]:
+            for r in scoreMessage.reactions:
+                users = await r.users().flatten()
+                for u in users:
+                    if not u.bot:
+                        userroles = [role.name for role in u.roles]
+                        if 'scorer' in userroles or 'quizmaster' in userroles or 'admin' in userroles:
+                            #teamToChange = list(scoretable_messages.keys())[list(scoretable_messages.values()).index(scoreMessage)]
+                            teamToChange = None
+                            scoreToAward = 0
+                            for team in scoretable_messages:
+                                if scoretable_messages[team].id == scoreMessage.id :
+                                    teamToChange = team
+                            if '\N{variation selector-16}\N{combining enclosing keycap}' in payload.emoji.name:
+                                scoreToAward = int(payload.emoji.name[0]) 
+                            elif payload.emoji.name == '\N{keycap ten}':
+                                scoreToAward = 10
+                            elif payload.emoji.name == '\U00002705':
+                                scoreToAward = 10
+                            elif payload.emoji.name == '\U0001F4DB':
+                                scoreToAward = -5
+                            print(teamToChange, scoreToAward)
+                            if teamToChange == None:
+                                channel = commonChannels[qmChannel]
+                                await channel.send("There's a problem with the scoretable")
+                            scores[teamToChange] += scoreToAward
+                            sign = lambda x: ('+', '')[x<0]
+                            channel = commonChannels[scoreChannel]
+                            response = '{}{} to {}. '.format(sign(scoreToAward),str(scoreToAward), teamToChange)
+                            await channel.send("Logged "+response)
+
+                            with open("scores.txt","w") as scoresFileObject:
+                                json.dump(scores, scoresFileObject)
+
+                            channel=teamChannels[teamToChange]
+                            response = '{}{} to your team. Your score is now {}'.format(sign(scoreToAward),str(scoreToAward), scores[teamToChange])
+                            await channel.send(response)
+                            editedMessage = '{}\t{}'.format(str(teamToChange),str(scores[teamToChange]).center(18))
+                            await scoreMessage.edit(content=editedMessage)
+
+                                
+                        await r.remove(u)
+
     
-    if payload.emoji.name == '\U00002705':
-        points = 10
-    elif payload.emoji.name == '\U000026D4':
-        points = -5
-    elif payload.emoji.name == '5\N{variation selector-16}\N{combining enclosing keycap}':
-        points = 5
-    elif payload.emoji.name == '\U0001F986':
-        points = 0
-    #print(points)
-    scores[team] += points
-    sign = lambda x: ('+', '')[x<0]
-    response = '{}{} to {}. '.format(sign(points),str(points), team) 
-    channel = commonChannels[scoreChannel]
-
-    response = '{}{} to {}. '.format(sign(points),str(points), team) 
-    await channel.send("Logged "+response)
-
-    await pounceChannel.send(response)
-
-    with open("scores.txt","w") as scoresFileObject:
-        json.dump(scores, scoresFileObject)
-
-    channel=teamChannels[team]
-    if points != 0:
-        response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
-    else:
-        response = 'You did not gain or lose points for that pounce. Your score remains {}'.format(scores[team])
-    await channel.send(response)
-
 
 #############################################
 # QM Slide operations: load, next, previous #
@@ -871,6 +968,9 @@ delete the last slide sent) enter `!prev`\
 and issue the command `!resetTeams`. Those who wish to participate \
 have to type `!join` to be automatically assigned a team.")
 
+    #create score table
+    await populateScoreTable(ctx)
+
     return
 
 
@@ -913,7 +1013,7 @@ async def on_ready():
         global quizOn
         quizOn=True
 
-        await commonChannels[qmChannel].send('Bot was restarted, scores restored')
+        await commonChannels[qmChannel].send('Bot was restarted, scores restored. The points-table is reloading.')
         await broadcastToAllTeams("The bot had to reset for reasons unknown \
 but the scores must have been retained. Below are the scores \
 after the last update. Please alert the quizmaster if \
@@ -924,6 +1024,10 @@ there's a discrepancy.")
         response = "Here are the scores after reset\n"
         response += '\n'.join(str(team)+" : "+str(scores[team]) for team in scoresInFile)
         await commonChannels[scoreChannel].send(response)
+
+        #create score table
+        await populateScoreTable("reset")
+
     else:
         print("Please !startQuiz")
 
@@ -997,82 +1101,7 @@ async def updateScores(ctx, *args, **kwargs):
         return
 
     if len(args) <2:
-        if len(args) == 1:
-            positive_points, negative_points = abs(int(args[0])), -1*abs(int(args[0]))
-        else:
-             positive_points, negative_points = 10, -5
-
-        teamDistribution = getTeamDistribution(bot, guildId, scores)
-        arr_of_messages = []
-        arr_of_msg_ids = []
-        for team in scores:
-            # Get team members, scores, generate a response and send
-            response = '{}\t{}\t{}'.format(
-                str(team),
-                str(scores[team]).center(8),
-                ', '.join(getTeamMembers(teamDistribution, team)).center(60))
-
-            mesg = await ctx.message.channel.send(response)
-            await mesg.add_reaction('\U00002795')
-            await mesg.add_reaction('\U00002796')
-            arr_of_messages.append(mesg)
-            arr_of_msg_ids.append(mesg.id)
-
-        global sco_command_messages
-        for msg in sco_command_messages:
-            await msg.delete()
-
-        sco_command_messages = arr_of_messages
-        wait_time = 1
-
-        def check(reaction, user):
-            auth, _ = getAuthorizedUser(user, "Only ", " can update scores", 'quizmaster', 'scorer')
-            return (auth and bot.user != user and
-                    reaction.message.id in arr_of_msg_ids and
-                    reaction.emoji in ['\U00002795', '\U00002796'])
-
-        while True:
-            try:
-                reaction, user = await bot.wait_for('reaction_add', timeout=wait_time, check=check)
-                await reaction.remove(user)
-                
-                ind = arr_of_msg_ids.index(reaction.message.id)
-                team = "team"+str(ind+1)
-
-                points = 0
-                # If plus add 10 to teams score
-                if reaction.emoji == '\U00002795':
-                    points = positive_points
-                # If minus remove 5 from teams score
-                if reaction.emoji == '\U00002796':
-                    points = negative_points
-            
-                scores[team] += points
-                sign = lambda x: ('+', '')[x<0]
-                response = '{}{} to {}. '.format(sign(points),str(points), team) 
-                channel = commonChannels[scoreChannel]
-
-                response = '{}\t{}\t{}'.format(
-                    str(team),
-                    str(scores[team]).center(8),
-                    ', '.join(getTeamMembers(teamDistribution, team)).center(60))
-                
-                await arr_of_messages[ind].edit(content= response)
-                response = '{}{} to {}. '.format(sign(points),str(points), team) 
-                await channel.send("Logged "+response)
-                await ctx.send(response)
-
-                with open("scores.txt","w") as scoresFileObject:
-                    json.dump(scores, scoresFileObject)
-        
-                channel=teamChannels[team]
-                response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
-                await channel.send(response)
-
-            except asyncio.TimeoutError:
-                # await self.message.clear_reactions()
-                # break
-                pass
+        ctx.channel.send("Could not update scores. Here's an example of how to call this: `!s 10 t4 t6 t7`. Or did you mean `!scores`?")
 
     if len(args)>=2:
         auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
@@ -1098,7 +1127,12 @@ async def updateScores(ctx, *args, **kwargs):
             channel=teamChannels[team]
             response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
             await channel.send(response)
+            try:
+                await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
+            except:
+                await commonChannels[scoreChannel].send("Did not edit the scores table. It is probably reloading. If that's not the case, award 0 points to the team to reload the score or issue the command `!pointstable` to refresh it.")
 
+        await ctx.message.add_reaction('\U0001F44D')
 
 #TODO handle !minus better
 @bot.command(
@@ -1142,6 +1176,11 @@ async def minus(ctx, *args, **kwargs):
         response = '{}{} points off your team score. Your score is now \
                 {}'.format(sign(points),str(points), scores[team])
         await channel.send(response)
+        try:
+            await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
+        except:
+            await commonChannels[scoreChannel].send("Did not edit score table. It is probably reloading.")
+
 
 @bot.command(
     name="resetScores",
@@ -1164,6 +1203,11 @@ async def resetscores(ctx, *args, **kwargs):
     scores.clear()
     for team in teamChannels:
         scores[team] = 0
+        try:
+            await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
+        except:
+            await ctx.channel.send("Did not edit score table. It is probably reloading.")
+
     with open("scores.txt","w") as scoresFileObject:
         json.dump(scores, scoresFileObject)
     response = "Scores reset to 0"
