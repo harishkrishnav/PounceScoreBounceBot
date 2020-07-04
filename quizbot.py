@@ -354,7 +354,7 @@ async def closepounce(ctx, *args, **kwargs):
     if not auth:
         ctx.send(response)
     # Read the guess and send to all channels
-    response = "Pounce closed. Any pounce for this question after this will not be considered."
+    response = "Pounce has closed. Pounces for this question after this will not be considered."
     await broadcastToAllTeams(response)
     channel = commonChannels[qmChannel]
     await channel.send(response)
