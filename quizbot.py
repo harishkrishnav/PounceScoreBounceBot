@@ -301,7 +301,7 @@ async def bounce(ctx, *args, **kwargs):
     team = getTeam(author)
     response = 'ON BOUNCE {}\'s {}: {}'.format(team, authorName, guess)
     channel = commonChannels[qmChannel]
-    await channel.send(response)
+    await channel.send(response, tts=True)
     response = 'Guess on the bounce by {}\'s {}: {}'.format(team, authorName, str(guess))
     await broadcastToAllTeams(response)
 
