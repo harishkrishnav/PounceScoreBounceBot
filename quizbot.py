@@ -1100,7 +1100,7 @@ async def updateScores(ctx, *args, **kwargs):
         return
 
     if len(args) <2:
-        ctx.channel.send("Could not update scores. Here's an example of how to call this: `!s 10 t4 t6 t7`. Or did you mean `!scores`?")
+        await ctx.channel.send("Could not update scores. Here's an example of how to call this: `!s 10 t4 t6 t7`. Or did you mean `!scores`?")
 
     if len(args)>=2:
         auth, response = getAuthorized(ctx,"Only ", " can update scores", 'quizmaster', 'scorer')
