@@ -379,7 +379,7 @@ async def displayScores(ctx, *args, **kwargs):
     # Get team members, scores, generate a response and send
     teamDistribution = getTeamDistribution(bot, guildId, scores)
     table = [[str(team),str(scores[team]),', '.join(getTeamMembers(teamDistribution, team))] for team in scores]
-    response = r'```'+'\n'+tabulate(table, ["","Score", "Members"], "grid", numalign="center")+r'```'
+    response = r'```'+'\n'+tabulate(table, ["","Score", "Members"], "grid", numalign="center",stralign="center")+r'```'
     await ctx.message.channel.send(response)
     #print(tabulate(table, ["","score", "members"], "grid"))
 
@@ -931,7 +931,7 @@ soon disappear.".format(str(numberOfTeams))
 `!b` command appear here"
     await commonChannels[qmChannel].send(response)
 
-    response = "Welcome! Below are the commands you can use to set scores. \
+    response = "Welcome! You can update scores in the points-table channel. Alternatively, you can use commands to set scores. \
 Teams are always abbreviated as t1 t2 etc.\
 \n`!s -10 t3 t4 t8` to add -10 points to teams3,4,5;\
 \n`!s 5 t2` to add 5 points to team2\
@@ -944,7 +944,8 @@ team's private text channel.\
 \nCommands for the bot:\
 \n`!p your guess here` or `!pounce your guess here` to pounce,\
 \n`!b your guess here` or `!bounce your guess here` to answer on bounce,\
-\n`!scores` to see the scores.")
+\n`!scores` to see the scores.\
+\n`!shout some message` to send some message to everyone. If there's no message, 'nice question' will be sent.")
 
     await broadcastToAllTeams("If you are seeing this message in the middle \
 of a quiz, alert the quizmaster. The scores might need to be checked.")
