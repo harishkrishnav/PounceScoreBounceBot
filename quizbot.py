@@ -332,6 +332,34 @@ async def shout(ctx, *args, **kwargs):
     await channel.send(response)
     await broadcastToAllTeams(response)
 
+@bot.command(
+    name="closePounce",
+    aliases = ["close", "cp", "CP", "closepounce", "pc"], 
+    help="Close pounce"
+    )
+async def closepounce(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    if not quizOn:
+        response = messageQuizNotOn
+        await ctx.message.channel.send(response)
+        return
+    auth, response = getAuthorized(
+            ctx,
+            "Only ", 
+            " can close pounce",
+            'quizmaster',
+            )
+    if not auth:
+        ctx.send(response)
+    # Read the guess and send to all channels
+    response = "Pounce closed. Any pounce for this question after this will not be considered."
+    await broadcastToAllTeams(response)
+    channel = commonChannels[qmChannel]
+    await channel.send(response)
+
+
 
 @bot.command(name="clearThis", help="delete all messages in a channel")
 async def clearThis(ctx, *args, **kwargs):
