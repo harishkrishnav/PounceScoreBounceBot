@@ -98,6 +98,7 @@ from botutils import (getTeam, getAuthorAndName, getTeamDistribution,
         getTeamChannels, unassignTeams, deleteFiles, convertToImages, getMostFrequentSlide, previewSlide,
         updateSlides, saveSlideState, recoverSlideState, getAuthorizedServer, getAuthorizedUser)
 
+from tabulate import tabulate
 from discord.ext import commands
 import discord
 
@@ -377,12 +378,10 @@ async def displayScores(ctx, *args, **kwargs):
         return
     # Get team members, scores, generate a response and send
     teamDistribution = getTeamDistribution(bot, guildId, scores)
-    response = '\n\n'.join('{}\t{}\t{}'.format(
-        str(team),
-        str(scores[team]).center(8),
-        ', '.join(getTeamMembers(teamDistribution, team)).center(60)) for team in scores
-        )
+    table = [[str(team),str(scores[team]),', '.join(getTeamMembers(teamDistribution, team))] for team in scores]
+    response = r'```'+'\n'+tabulate(table, ["","Score", "Members"], "grid", numalign="center")+r'```'
     await ctx.message.channel.send(response)
+    #print(tabulate(table, ["","score", "members"], "grid"))
 
 @bot.command(
     name="scoretable",
