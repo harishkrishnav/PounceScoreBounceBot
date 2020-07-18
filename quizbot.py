@@ -190,7 +190,7 @@ the `!startQuiz` command."
 
 @bot.command(
     name="join",
-    aliases = ["assignMe", "joinTeam"],
+    aliases = ["assignMe", "joinTeam", "JOIN"],
     help="`!join 3` to join team3. Just `!join` for a random team"
     )
 @commands.max_concurrency(1,per=commands.BucketType.guild,wait=True)
@@ -307,7 +307,7 @@ async def bounce(ctx, *args, **kwargs):
 
 @bot.command(
     name="shout",
-    aliases = ["hail", "announce", "exclaim", "praise"], 
+    aliases = ["hail", "announce", "exclaim", "praise", "nice"], 
     help="Announce something to everyone, empty text would send nice question"
     )
 async def shout(ctx, *args, **kwargs):
@@ -393,7 +393,7 @@ async def clearThis(ctx, *args, **kwargs):
 
 @bot.command(
     name="scores",
-    aliases = ["SCORES"],
+    aliases = ["SCORES", "teams"],
     help="Displays the scores"
     )
 async def displayScores(ctx, *args, **kwargs):
@@ -453,7 +453,7 @@ async def populateScoreTable(ctx, *args, **kwargs):
         await message.add_reaction('\N{keycap ten}')
         await message.add_reaction('\U00002705')
         await channel.send(r"` `")
-    response = '\U0001F4DB'+" stands for -5.  "+'\U00002705' + " is the maximum score per question which in this quiz is +10.\nAward a team 0 points to refresh their score."  
+    response = '\U0001F4DB'+" stands for -5.  "+'\U00002705' + " is the maximum score per question which in this quiz is +10.\nIt takes a couple of seconds for the table to reflect changes. If you see a reaction count become 2, you can be assured that it is processed. Award a team 0 points to reload their score with the latest value. To reload this entire table, issue the command `!pointstable`"  
     await channel.send(response)
 
 @bot.command(
@@ -739,6 +739,7 @@ async def turnOff(ctx, *args, **kwargs):
     aliases=["next",],
     help="Move forward one slide"
     )
+@commands.max_concurrency(1,per=commands.BucketType.guild,wait=True)
 async def nextSlide(ctx, *args, **kwargs):
     # Authorisation
     global presentationLoaded
@@ -782,8 +783,11 @@ files channel and then run `!loadfile`"
     global time_question
     global pounce_order
     global pounce_times
-    if autoSplit and slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:
-        print("End of question")
+    
+    if autoSplit and slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:    
+        print("End of question")        
+        response = "Pounce open."
+        await broadcastToAllTeams(response)
         time_question = time.time()
         pounce_order = []
         pounce_times = {}
@@ -1107,6 +1111,40 @@ async def resetRoles(ctx, *args, **kwargs):
     await unassignTeams(bot, guildId, ctx)
     await ctx.send("Removed all team roles. The quizmaster can either manually \
 assign roles or ask participants to `!join` once `!startQuiz` is run")
+    return 
+
+@bot.command(
+    name="kickAll",
+    aliases = ["kickall", "kickEveryone"],
+    help="remove all team roles"
+    )
+async def kickAll(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    auth, response = getAuthorized(
+            ctx,
+            "Only ",
+            " can kick people out",
+            'quizmaster', 'overlord', 'admin'
+            )
+    if not auth:
+        await ctx.send(response)
+        return
+    # Kick
+    guild =  bot.get_guild(int(guildId))
+    for member in guild.members:
+        memberRoles = [role.name for role in member.roles]
+        if 'admin' not in memberRoles and 'overlord' not in memberRoles and 'quizmaster' not in memberRoles:
+            try:
+                await member.kick()
+                response = '{} is removed from the server'.format(str(member.display_name))
+                await ctx.send(str(response))
+            except:
+                print("Did not kick ",member," because of permissions.")
+
+    
+    await ctx.send("Kicked everyone. Invite them back by creating an invite.")
     return 
 
 
