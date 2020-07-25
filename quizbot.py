@@ -497,7 +497,8 @@ async def pounce(ctx, *args, **kwargs):
         if team in pounce_order:
             pounce_order.remove(team)
             pounce_order.append(team)
-            response += "You seem to have pounced multiple times for this question. Please discuss properly and submit only one pounce per question in the future."
+            response += "You seem to have pounced multiple times for this question. Please discuss properly and submit only one pounce per question in the future. \
+                If that is not the case, it could be that the quizmaster has not yet sent all the slides for this question."
         else:
             pounce_order.append(team)
 
@@ -541,10 +542,9 @@ async def on_raw_reaction_add(payload):
             #print(points)
             scores[team] += points
             sign = lambda x: ('+', '')[x<0]
-            response = '{}{} to {}. '.format(sign(points),str(points), team) 
-            channel = commonChannels[scoreChannel]
 
-            response = '{}{} to {}. '.format(sign(points),str(points), team) 
+            channel = commonChannels[scoreChannel]
+            response = '{}{} to {} for a pounce '.format(sign(points),str(points), team) 
             await channel.send("Logged "+response)
 
             await pounceChannel.send(response)
@@ -557,7 +557,7 @@ async def on_raw_reaction_add(payload):
                 response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
             else:
                 response = 'You did not gain or lose points for that pounce. Your score remains {}'.format(scores[team])
-            await channel.send(response, tts=True)
+            await channel.send(response)
             try:
                 await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
             except:
@@ -1192,7 +1192,7 @@ async def updateScores(ctx, *args, **kwargs):
         for team in teams:
             channel=teamChannels[team]
             response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
-            await channel.send(response, tts=True)
+            await channel.send(response)
             try:
                 await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
             except:
