@@ -418,7 +418,7 @@ async def displayScores(ctx, *args, **kwargs):
 )
 async def populateScoreTable(ctx, *args, **kwargs):
     # Authorisation
-    if ctx is not "reset":
+    if ctx != "reset":
         if not getAuthorizedServer(bot, guildId, ctx):
             return
         auth, response = getAuthorized(
@@ -605,7 +605,7 @@ async def on_raw_reaction_add(payload):
 
                             channel=teamChannels[teamToChange]
                             response = '{}{} to your team. Your score is now {}'.format(sign(scoreToAward),str(scoreToAward), scores[teamToChange])
-                            await channel.send(response, tts=True)
+                            await channel.send(response)
                             editedMessage = '{}\t{}'.format(str(teamToChange),str(scores[teamToChange]).center(18))
                             await scoreMessage.edit(content=editedMessage)
 
