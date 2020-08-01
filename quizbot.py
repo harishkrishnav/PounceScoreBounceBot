@@ -408,6 +408,10 @@ async def displayScores(ctx, *args, **kwargs):
     teamDistribution = getTeamDistribution(bot, guildId, scores)
     table = [[str(team),str(scores[team]),', '.join(getTeamMembers(teamDistribution, team))] for team in scores]
     response = r'```'+'\n'+tabulate(table, ["","Score", "Members"], "grid", numalign="center",stralign="center")+r'```'
+    if len(response) > 1994:
+        response = '\n'.join(str(team)+" : "+str(scores[team]) for team in scores)
+    if len(response) > 1994:
+        response = "There are too many teams to display scores. If you really want to know, perhaps you can look at the points-table channel or ask the quizmaster to look at the scores.txt textfile they have on their system."
     await ctx.message.channel.send(response)
     #print(tabulate(table, ["","score", "members"], "grid"))
 
