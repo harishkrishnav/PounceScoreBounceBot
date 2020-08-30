@@ -2,6 +2,8 @@
 
 ## Update: now can send slides and scoring can be done through buttons - all thanks to [Athreya](https://github.com/cathreya) and [Zubair](https://github.com/zubairabid) 
 
+If you want to do this the easy way, just follow [this wiki](https://github.com/harishkrishnav/PounceScoreBounceBot/wiki/Bot-setup,-the-easy-way)
+
 #### Setting up the environment
 If you starting afresh, create a server by clicking [this link](https://discord.new/7hjs36KQ52tr) and a bot following [this link](https://imgur.com/jEgQEsC). You can skip the changes to the server section below.
 If you are already using the bot and have an existing server, follow the following instructions
