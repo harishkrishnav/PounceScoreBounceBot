@@ -92,6 +92,8 @@ import os
 import json
 import asyncio
 import time
+from itertools import groupby
+
 
 from botutils import (getTeam, getAuthorAndName, getTeamDistribution, 
         getTeamMembers, getAuthorized, deleteAllMessages, getCommonChannels,
@@ -122,8 +124,7 @@ try:
 except FileNotFoundError:
     # otherwise, we take the token and guild ID as inputs, and write to 
     # .env for ease of use next time
-    print("Setting up the bot for your server. For details, refer to \
-\nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
+    print("Setting up the bot for your server. For details, refer to \nhttps://github.com/harishkrishnav/PounceScoreBounceBot/\#running-the-bot-the-first-time")
     print("You will need to enter these credentials only the first time you \
 run on a guild")
     token = input("Enter bot developer token from the bot menu in\
@@ -178,6 +179,10 @@ time_question = None
 pounce_order = []
 pounce_times = {}
 pounce_messages = {}
+answering_history = {}
+question_number = 0
+all_teams = []
+quiz_direction = "clockwise"
 
 ### Prewriting some common error messages ###
 messageQuizNotOn = "This is the right command. However, \
@@ -213,7 +218,7 @@ async def assignRoles(ctx, *args, **kwargs):
         if len(response):
             await ctx.message.channel.send(response)
         else:
-            response="You are already in {}. Please contact the quizmaster if you need help.".format(getTeam(author))
+            response="You are already in {}. If you really really need to, you can remove yourself from a team using the command `!unjoin`. Please contact the quizmaster if you need help.".format(getTeam(author))
             await ctx.message.channel.send(response)
         return
     
@@ -524,6 +529,9 @@ async def pounce(ctx, *args, **kwargs):
 async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id: 
         return
+    global question_number
+    global answering_history
+
     message_id = payload.message_id
     if payload.emoji.name in ['\U00002705', '\U000026D4', '5\N{variation selector-16}\N{combining enclosing keycap}' , '\U0001F986']:
         if message_id in pounce_messages:
@@ -566,6 +574,9 @@ async def on_raw_reaction_add(payload):
                 await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
             except:
                 await commonChannels[scoreChannel].send("Did not edit score table. It is probably reloading. If it is not, to refresh the score of a team, award them 0 points.")
+                
+            if team not in answering_history[question_number][0] and points>0:
+                answering_history[question_number][0].append(team)
 
 
 
@@ -613,7 +624,9 @@ async def on_raw_reaction_add(payload):
                             editedMessage = '{}\t{}'.format(str(teamToChange),str(scores[teamToChange]).center(18))
                             await scoreMessage.edit(content=editedMessage)
 
-                                
+                            if teamToChange not in pounce_order and scoreToAward > 0:
+                                answering_history[question_number][1].append(teamToChange)
+
                         await r.remove(u)
 
     
@@ -736,11 +749,13 @@ async def turnOff(ctx, *args, **kwargs):
     await ctx.message.channel.send(response)
     save()
 
+def keyfunc(s):
+    return [int(''.join(g)) if k else ''.join(g) for k, g in groupby(s, str.isdigit)]
 
 
 @bot.command(
     name="n",
-    aliases=["next",],
+    aliases=["next","nextslide"],
     help="Move forward one slide"
     )
 @commands.max_concurrency(1,per=commands.BucketType.guild,wait=True)
@@ -787,14 +802,59 @@ files channel and then run `!loadfile`"
     global time_question
     global pounce_order
     global pounce_times
+    global question_number
+    global answering_history
+    global all_teams
+    global quiz_direction
     
     if autoSplit and slideNumber < len(slides) -1 and slides[slideNumber+1] in safetySlides:    
-        print("End of question")        
-        response = "Pounce open."
-        await broadcastToAllTeams(response)
+
         time_question = time.time()
         pounce_order = []
         pounce_times = {}
+        question_number += 1
+        answering_history[question_number] = [[],[]]
+        print(answering_history)
+        
+        response = "BETA: Question direct to "
+        i = question_number
+        last_answerers = []
+        while(i>0):
+            if len(answering_history[i][1]):
+                last_answerers= answering_history[i][1]
+                break
+            i -=1
+
+        if not len(last_answerers):
+            team_to=all_teams[0]
+            print("No last answers")
+        else:
+            last_answerers_max_index = max([all_teams.index(i) for i in last_answerers])
+            last_team = all_teams[last_answerers_max_index]
+                        
+            last_team_index = all_teams.index(last_team)
+            team_to=all_teams[last_team_index+1]
+            #if last_team_index == len(all_teams)-1:
+            #    team_to=all_teams[0]
+            #else:
+            #    team_to=all_teams[last_team_index+1]
+
+        response += str(team_to)
+        await ctx.message.channel.send(response)
+
+        numberOfTeams = len(scores)
+        print("End of question")
+        response = "Pounce open. \nBETA:Question direct to "+team_to
+        await broadcastToAllTeams(response)
+        print("number of teams", numberOfTeams)
+        team_to_number = int(team_to[4:])
+        print(quiz_direction)
+        if quiz_direction=='clockwise':
+            all_teams = ['team'+str(i) for i in range(team_to_number,numberOfTeams+1)] + ['team'+str(i) for i in range(1,team_to_number+1)]
+        else:
+            all_teams = ['team'+str(i) for i in range(team_to_number,0,-1)] + ['team'+str(i) for i in range(numberOfTeams,team_to_number-1,-1)]
+            print("anticlockwise")
+        print(all_teams)          
 
     save()
              
@@ -842,6 +902,81 @@ files channel and then run `!loadfile`"
 
     await updateSlides(ctx, filename, commonChannels, teamChannels, questionChannel, qmChannel, scoreChannel)
     save()
+
+
+@bot.command(
+    name="cw",
+    aliases=["clockwise",],
+    help="Set as clockwise round"
+    )
+async def setclockwise(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can change slides',
+            'quizmaster', 'scorer'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+
+    if len(args):
+        team_to = args[0].replace('t','team')
+    else:
+        team_to = 'team1'
+
+    team_to_number = int(team_to[4:])
+    numberOfTeams = len(scores)
+    global all_teams
+    global quiz_direction
+    quiz_direction = 'clockwise'
+    all_teams = ['team'+str(i) for i in range(team_to_number,numberOfTeams+1)] + ['team'+str(i) for i in range(1,team_to_number+1)]
+    
+    response = "\nBETA: We are currently going clockwise. This question is direct to "+team_to
+    await broadcastToAllTeams(response)
+    await commonChannels[qmChannel].send(response)
+    save()
+    
+
+@bot.command(
+    name="acw",
+    aliases=["anticlockwise","reverse"],
+    help="Set as clockwise round"
+    )
+async def setanticlockwise(ctx, *args, **kwargs):
+    # Authorisation
+    if not getAuthorizedServer(bot, guildId, ctx):
+        return 
+    auth, response = getAuthorized(
+            ctx,
+            'Only ',
+            ' can change slides',
+            'quizmaster', 'scorer'
+            )
+    if not auth:
+        await ctx.message.channel.send(response)
+        return
+
+    if len(args):
+        team_to = args[0].replace('t','team')
+    else:
+        team_to = 'team'+str(len(scores))
+    
+    team_to_number = int(team_to[4:])
+    numberOfTeams = len(scores)
+    global all_teams
+    global quiz_direction
+    quiz_direction = 'anticlockwise'
+    all_teams = ['team'+str(i) for i in range(team_to_number,0,-1)] + ['team'+str(i) for i in range(numberOfTeams,team_to_number-1,-1)]
+
+    response = "\nBETA: We are currently going anticlockwise. This question is direct to "+team_to
+    await broadcastToAllTeams(response)
+    await commonChannels[qmChannel].send(response)
+    save()
+
 
 
 ############################################################################
@@ -920,6 +1055,7 @@ with 7 teams). Existing member roles will not be affected.")
 
     # Read number of teams, clear messages, set flags, reset scores, send
     # the welcome texts
+    global numberOfTeams
     numberOfTeams = int(args[-1])
     response = "Creating a quiz with {} teams. \
 \nClearing all channels. This message and everything above might \
@@ -1007,6 +1143,9 @@ have to type `!join` to be automatically assigned a team.")
     #create score table
     await populateScoreTable(ctx)
 
+    setclockwise(ctx)
+
+
     return
 
 
@@ -1031,6 +1170,10 @@ async def on_ready():
         commonChannels = {}
         teamChannels = getTeamChannels(bot, guildId, numberOfTeams)
         commonChannels = getCommonChannels(bot, guildId, whitelistChannels)
+
+        global all_teams
+        all_teams = ['team'+str(i) for i in range(1,numberOfTeams+1)]
+        print(all_teams)
 
         for key in teamChannels.keys():
             print(key, teamChannels[key])
@@ -1193,6 +1336,8 @@ async def updateScores(ctx, *args, **kwargs):
         with open("scores.txt","w") as scoresFileObject:
             json.dump(scores, scoresFileObject)
 
+        global answering_history
+
         for team in teams:
             channel=teamChannels[team]
             response = '{}{} to your team. Your score is now {}'.format(sign(points),str(points), scores[team])
@@ -1201,6 +1346,12 @@ async def updateScores(ctx, *args, **kwargs):
                 await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
             except:
                 await commonChannels[scoreChannel].send("Did not edit the scores table. It is probably reloading. If that's not the case, award 0 points to the team to reload the score or issue the command `!pointstable` to refresh it.")
+            
+            if team not in pounce_order and points > 0 and team not in answering_history[question_number][1]:
+                answering_history[question_number][1].append(team)
+            elif team in pounce_order and points and team not in answering_history[question_number][0] > 0:
+                answering_history[question_number][0].append(team)
+
 
         await ctx.message.add_reaction('\U0001F44D')
 
@@ -1241,6 +1392,8 @@ async def minus(ctx, *args, **kwargs):
     with open("scores.txt","w") as scoresFileObject:
         json.dump(scores, scoresFileObject)
 
+    global answering_history
+
     for team in teams:
         channel=teamChannels[team]
         response = '{}{} points off your team score. Your score is now \
@@ -1250,6 +1403,12 @@ async def minus(ctx, *args, **kwargs):
             await scoretable_messages[team].edit(content='{}\t{}'.format(str(team),str(scores[team]).center(18)))
         except:
             await commonChannels[scoreChannel].send("Did not edit score table. It is probably reloading.")
+        
+        if team not in pounce_order and points > 0 and team not in answering_history[question_number][1]:
+            answering_history[question_number][1].append(team)
+        elif team in pounce_order and points and team not in answering_history[question_number][0] > 0:
+            answering_history[question_number][0].append(team)
+        
 
 
 @bot.command(
@@ -1352,6 +1511,10 @@ def load():
     global time_question
     global pounce_times
     global pounce_order
+    global answering_history
+    global question_number
+    global all_teams
+    global quiz_direction
     try:
         presentationLoaded = state['presentationLoaded']
         slides = state['slides']
@@ -1361,6 +1524,10 @@ def load():
         time_question = state['time_question']
         pounce_order = state['pounce_order']
         pounce_times = state['pounce_times']
+        answering_history = state['answering_history']
+        question_number = state['question_number']
+        all_teams = state['all_teams']
+        quiz_direction = state['quiz_direction']
     except:
         print("Please STOP QUIZ or delete slides.pkl")
 
@@ -1374,6 +1541,10 @@ def save():
     state['time_question']=time_question
     state['pounce_order']=pounce_order
     state['pounce_times']=pounce_times
+    state['answering_history']=answering_history
+    state['question_number']=question_number
+    state['all_teams']=all_teams
+    state['quiz_direction']=quiz_direction
     saveSlideState('slides.pkl', state)
     #print("Saving:")
     #for key in state:
