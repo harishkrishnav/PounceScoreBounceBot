@@ -198,7 +198,7 @@ def getMostFrequentSlide(presentationDirPath):
     filelist = [(f,os.stat(os.path.join(presentationDirPath,f)).st_size) for f in os.listdir(presentationDirPath) if f.endswith('jpg')]
     file_sizes = {}
     for f in filelist:
-        rounded_size = (f[1] // 5) * 5
+        rounded_size = (f[1] // 60) * 60
         if rounded_size in file_sizes:
             file_sizes[rounded_size].append(f[0])
         else:
