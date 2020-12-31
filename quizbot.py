@@ -108,7 +108,11 @@ import discord
 # Bot initialisation for server #
 #################################
 
-bot = commands.Bot(command_prefix='!')
+intents = discord.Intents.default()
+intents.members = True
+intents.reactions = True
+
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 ### Get bot token and guild ID from env file, make one if it doesn't exist ###
 try:
@@ -1039,6 +1043,7 @@ async def endQuiz(ctx, *args, **kwargs):
     )
 async def newQuiz(ctx, *args, **kwargs):
     # Authorisation
+    
     if not getAuthorizedServer(bot, guildId, ctx):
         return 
     auth, response = getAuthorized(ctx,'Only ', ' can end this quiz','quizmaster', 'admin')
@@ -1485,7 +1490,16 @@ async def on_command_error(ctx, error):
         return 
     with open('err.log', 'a') as f:
         f.write(f'Unhandled message: {error}\n')
-        await ctx.send("The command could not be run. Please type `!help` for the list of available commands")
+    await ctx.send("The command could not be run. Please type `!help` for the list of available commands")
+    
+    try:
+        await ctx.send("Specifically, " + ctx.message.content + " was not run fully.")
+    except:
+        print("A command was not run fully. Tried finding which command it was but couldn't.")
+    
+    if ctx.message.content == r'!n':
+        await ctx.send("Trying to send slide again")
+        await nextSlide(ctx)
 
 ############################################################
 #  Helper functions that need more context than botutils.  #
